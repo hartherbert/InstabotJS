@@ -1,13 +1,11 @@
 [![TypeScript version][ts-badge]][typescript-30]
 [![Node.js version][nodejs-badge]][nodejs]
-[![APLv2][license-badge]][LICENSE]
-[![Build Status][travis-badge]][travis-ci]
+[![MIT][license-badge]][license]
 [![PRs Welcome][prs-badge]][prs]
 [![Donate][donate-badge]][donate]
 
 [![Watch on GitHub][github-watch-badge]][github-watch]
 [![Star on GitHub][github-star-badge]][github-star]
-[![Tweet][twitter-badge]][twitter]
 
 # InstabotJS
 
@@ -15,20 +13,145 @@ Automatic Instagram-Bot with [Node.js][nodejs] project in [TypeScript][typescrip
 
 What's included:
 
-+ [TypeScript][typescript] [3.0][typescript-30],
-+ [TSLint 5][tslint] with [Microsoft rules][tslint-microsoft-contrib],
-+ [Prettier][prettier] to enforces a consistent code style (but it's optional),
-+ [NPM scripts for common operations](#available-scripts),
-+ .editorconfig for consistent file format.
+* [TypeScript][typescript] [3.0][typescript-30],
+* [TSLint 5][tslint] with [Microsoft rules][tslint-microsoft-contrib],
+* [Prettier][prettier] to enforces a consistent code style (but it's optional),
+* [NPM scripts for common operations](#available-scripts),
+* .editorconfig for consistent file format.
+
+## Config
+These configuration setting should be set inside the src [bot-config.json](src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](build/src/bot-config.json) in the `build/src` directory.
+```typescript
+/**
+   * hashtags, list of hashtags the bot should search for, without '#' prefix
+   * */
+  hashtags: string[];
+
+  /**
+   * sleepTime, how many hours the bot should sleep within 24 hours
+   * */
+  sleepTime: number;
+
+  /*Like-Config*/
+  /**
+   * maxLikesPerHashtag, maximum likes the bot is allowed to make per hashtag per 24 hours
+   * when the limit is reached, the bot takes another hashtag
+   * */
+  maxLikesPerHashtag: number;
+
+  /**
+   * maxLikesToLikeMedia, maximum likes a post is allowed to have to be liked by the bot
+   * */
+  maxLikesToLikeMedia: number;
+
+  /**
+   * minLikesToLikeMedia, minimum likes a post is allowed to have to be liked by the bot
+   * */
+  minLikesToLikeMedia: number;
+
+  /**
+   * maxLikesPerDay, maximum likes the bot is allowed to make per 24 hours
+   * */
+  maxLikesPerDay: number;
+
+  /**
+   * maxDislikesPerDay, maximum dislikes per 24 hours
+   * */
+  maxDislikesPerDay: number;
+
+  /*Follow-Config*/
+  /**
+   * maxFollowsPerDay, max people to follow in 24 hours
+   * */
+  maxFollowsPerDay: number;
+
+  /**
+   * maxUnfollowsPerDay, max people to unfollow in 24 hours
+   * */
+  maxUnfollowsPerDay: number;
+
+  /**
+   * minUnfollowWaitTime, minimum time to wait to unfollow a user the bot followed before
+   * time in minutes
+   * */
+  minUnfollowWaitTime: number;
+
+  /**
+   * maxFollowsPerHashtag, maximum follows the bot is allowed to make per hashtag per 24 hours
+   * when the limit is reached, the bot takes another hashtag
+   * (only used by sinlge follow mode)
+   * */
+  maxFollowsPerHashtag: number;
+
+  /**
+   * followerOptions, options that determine if bot should follow a specific user
+   * */
+  followerOptions: {
+    /**
+     * unwantedUsernames, list of strings containing full or parts of usernames that are not wanted to be followed
+     * the bot skips them
+     * */
+    unwantedUsernames?: string[];
+
+    /**
+     * followFakeUsers, if bot should follow users that the bot thinks are fake users
+     * determined by (following/followers)
+     * */
+    followFakeUsers?: boolean;
+
+    /**
+     * followSelebgramUsers, if bot should follow users that the bot thinks are selebgram users
+     * determined by (followers/following)
+     * */
+    followSelebgramUsers?: boolean;
+
+    /**
+     * followPassiveUsers, if bot should follow users that the bot thinks are passive (inactive) users
+     * determined by (count of medias per (follower and followings)
+     * */
+    followPassiveUsers?: boolean;
+  }
+```
 
 ## Quick start
 
 This project is intended to be used with v8 (LTS Carbon) release of [Node.js][nodejs] or newer and [NPM][npm]. Make sure you have those installed. Then just type following commands:
 
-
 ## Bot config
 
-the bot can be customized by the bot-config.json file
+If you don't want to change anything in the code and just use the bot with and change the configuration, follow these steps:
+
+Download and install all npm dependencies
+
+```sh
+git clone https://github.com/hobbydevs/InstabotJS
+cd InstabotJS
+npm install
+```
+
+or just download and unzip current `master` branch:
+
+```sh
+wget https://github.com/hobbydevs/InstabotJS/archive/master.zip -O InstabotJS
+unzip InstabotJS.zip && rm InstabotJS.zip
+```
+
+After that go to the [bot-config.json](build/src/bot-config.json) and change the username to your instagram username and the password to your instagram password.
+
+When you've done all just go to the [build](build/src) directory and run
+
+```sh
+node main.js
+```
+
+### Advanced Bot Config
+
+the bot can be customized by the bot-config.json file.
+To see all available options to customize the bot in the .json see the typescript [config](src/models/config.ts).
+
+To change some code and compile the typescript code to javascript, just run `npm run watch`. This will copy the [bot-config.json](src/bot-config.json) from the src to the build/src directory and watch filechanges and compile them to javascript.
+When you finished coding some stuff just go to `build/src` and run `node main.js` and watch your little bot go 🔥
+
 
 ## Actions frequency restrictions
 
@@ -55,7 +178,6 @@ You should keep these in mind in case you’re not sure that Instagram treats yo
 
 The best strategy for new accounts would be to publish 2 or 3 images and let the account settle in for 2 or 3 weeks.
 
-
 ```sh
 git clone https://github.com/hobbydevs/InstabotJS
 cd InstabotJS
@@ -69,15 +191,19 @@ wget https://github.com/hobbydevs/InstabotJS/archive/master.zip -O InstabotJS
 unzip InstabotJS.zip && rm InstabotJS.zip
 ```
 
-
 ## Available scripts
 
-+ `clean` - remove coverage data, Jest cache and transpiled files,
-+ `build` - transpile TypeScript to ES6,
-+ `watch` - interactive watch mode to automatically transpile source files,
-+ `lint` - lint source files and tests,
-+ `test` - run tests,
-+ `test:watch` - interactive watch mode to automatically re-run tests
+* `clean` - remove coverage data, Jest cache and transpiled files,
+* `build` - transpile TypeScript to ES6,
+* `watch` - interactive watch mode to automatically transpile source files,
+* `lint` - lint source files and tests,
+* `test` - run tests,
+* `test:watch` - interactive watch mode to automatically re-run tests
+
+## Support
+If you want to support this project send a PR or give it a star. 
+Want to say thank you? Help me out  [![Donate][donate-badge]][donate]
+
 
 [ts-badge]: https://img.shields.io/badge/TypeScript-3.0-blue.svg
 [nodejs-badge]: https://img.shields.io/badge/Node.js->=%208.9-blue.svg
@@ -86,11 +212,11 @@ unzip InstabotJS.zip && rm InstabotJS.zip
 [travis-ci]: https://travis-ci.org/hobbydevs/InstabotJS
 [typescript]: https://www.typescriptlang.org/
 [typescript-30]: https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-0.html
-[license-badge]: https://img.shields.io/badge/license-APLv2-blue.svg
+[license-badge]: https://img.shields.io/github/license/mashape/apistatus.svg
 [license]: https://github.com/hobbydevs/InstabotJS/blob/master/LICENSE
 [prs-badge]: https://img.shields.io/badge/PRs-welcome-brightgreen.svg
 [prs]: http://makeapullrequest.com
-[donate-badge]: https://img.shields.io/badge/$-support-green.svg
+[donate-badge]: https://img.shields.io/badge/donate-what%20you%20want-brightgreen.svg
 [donate]: https://bit.ly/2x0cUp1
 [github-watch-badge]: https://img.shields.io/github/watchers/hobbydevs/InstabotJS.svg?style=social
 [github-watch]: https://github.com/hobbydevs/InstabotJS/watchers
