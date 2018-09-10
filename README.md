@@ -178,18 +178,6 @@ You should keep these in mind in case you’re not sure that Instagram treats yo
 
 The best strategy for new accounts would be to publish 2 or 3 images and let the account settle in for 2 or 3 weeks.
 
-```sh
-git clone https://github.com/hobbydevs/InstabotJS
-cd InstabotJS
-npm install
-```
-
-or just download and unzip current `master` branch:
-
-```sh
-wget https://github.com/hobbydevs/InstabotJS/archive/master.zip -O InstabotJS
-unzip InstabotJS.zip && rm InstabotJS.zip
-```
 
 ## Available scripts
 
