@@ -20,7 +20,7 @@ What's included:
 * .editorconfig for consistent file format.
 
 ## Config
-These configuration setting should be set inside the src [bot-config.json](src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](build/src/bot-config.json) in the `build/src` directory.
+These configuration setting should be set inside the src [bot-config.json](/src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](/build/src/bot-config.json) in the `build/src` directory.
 ```typescript
 /**
    * hashtags, list of hashtags the bot should search for, without '#' prefix
@@ -136,9 +136,9 @@ wget https://github.com/hobbydevs/InstabotJS/archive/master.zip -O InstabotJS
 unzip InstabotJS.zip && rm InstabotJS.zip
 ```
 
-After that go to the [bot-config.json](build/src/bot-config.json) and change the username to your instagram username and the password to your instagram password.
+After that go to the [bot-config.json](/build/src/bot-config.json) and change the username to your instagram username and the password to your instagram password.
 
-When you've done all just go to the [build](build/src) directory and run
+When you've done all just go to the [build](/build/src) directory and run
 
 ```sh
 node main.js
@@ -147,9 +147,9 @@ node main.js
 ### Advanced Bot Config
 
 the bot can be customized by the bot-config.json file.
-To see all available options to customize the bot in the .json see the typescript [config](src/models/config.ts).
+To see all available options to customize the bot in the .json see the typescript [config](/src/models/config.ts).
 
-To change some code and compile the typescript code to javascript, just run `npm run watch`. This will copy the [bot-config.json](src/bot-config.json) from the src to the build/src directory and watch filechanges and compile them to javascript.
+To change some code and compile the typescript code to javascript, just run `npm run watch`. This will copy the [bot-config.json](/src/bot-config.json) from the src to the build/src directory and watch filechanges and compile them to javascript.
 When you finished coding some stuff just go to `build/src` and run `node main.js` and watch your little bot go 🔥
 
 
