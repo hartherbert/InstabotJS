@@ -664,7 +664,10 @@ export class Instabot {
           'h',
       );
       this.banCount = 0;
-      return await Utils.sleepSecs(this.banSleepTime);
+      this.botIsAsleep = true;
+      await Utils.sleepSecs(this.banSleepTime);
+      this.botIsAsleep = false;
+      return Promise.resolve();
     } else {
       return Promise.resolve();
     }
