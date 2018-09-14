@@ -101,7 +101,7 @@ class Instabot {
         const followers = this.storageService.getFollowers();
         const likes = this.storageService.getLikes();
         const dislikes = this.storageService.getDisLikes();
-        const unfollows = this.storageService.getUnFollows();
+        const unfollows = this.storageService.getUnfollowed();
         const todayFollowers = Object.keys(followers).filter(key => {
             try {
                 return (new Date(followers[key]).setHours(0, 0, 0, 0) ==

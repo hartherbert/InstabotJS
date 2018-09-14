@@ -15,6 +15,7 @@ export interface BotBehaviorConfig {
 
   /**
    * sleepTime, how many hours the bot should sleep within 24 hours
+   * @param time in hours
    * */
   sleepTime: number;
 
@@ -45,6 +46,12 @@ export interface BotBehaviorConfig {
    * */
   maxDislikesPerDay: number;
 
+  /**
+   * minDislikeWaitTime, minimum time to wait to dislike a mediapost the bot liked before
+   * @param time in minutes
+   * */
+  minDislikeWaitTime: number;
+
   /*Follow-Config*/
   /**
    * maxFollowsPerDay, max people to follow in 24 hours
@@ -58,7 +65,7 @@ export interface BotBehaviorConfig {
 
   /**
    * minUnfollowWaitTime, minimum time to wait to unfollow a user the bot followed before
-   * time in minutes
+   * @param time in minutes
    * */
   minUnfollowWaitTime: number;
 
@@ -73,4 +80,11 @@ export interface BotBehaviorConfig {
    * followerOptions, options that determine if bot should follow a specific user
    * */
   followerOptions: UserAccountOptions;
+
+  /**
+   * waitTimeBeforeDelete, minutes to wait before delete stored data (only unfollowed and disliked images)
+   * this option is only available to prevent an enormous data stored as json
+   * @param time in minutes
+   * */
+  waitTimeBeforeDelete: number;
 }

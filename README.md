@@ -22,6 +22,7 @@ What's included:
 ## Config
 These configuration setting should be set inside the src [bot-config.json](/src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](/build/src/bot-config.json) in the `build/src` directory.
 ```typescript
+interface BotBehaviorConfig {
 /**
    * hashtags, list of hashtags the bot should search for, without '#' prefix
    * */
@@ -58,6 +59,12 @@ These configuration setting should be set inside the src [bot-config.json](/src/
    * maxDislikesPerDay, maximum dislikes per 24 hours
    * */
   maxDislikesPerDay: number;
+  
+  /**
+   * minDislikeWaitTime, minimum time to wait to dislike a mediapost the bot liked before
+   * @param time in minutes
+   * */
+  minDislikeWaitTime: number;
 
   /*Follow-Config*/
   /**
@@ -82,6 +89,13 @@ These configuration setting should be set inside the src [bot-config.json](/src/
    * (only used by sinlge follow mode)
    * */
   maxFollowsPerHashtag: number;
+  
+  /**
+   * waitTimeBeforeDelete, minutes to wait before delete stored data (only unfollowed and disliked images)
+   * this option is only available to prevent an enormous data stored as json
+   * @param time in minutes
+   * */
+  waitTimeBeforeDelete: number;
 
   /**
    * followerOptions, options that determine if bot should follow a specific user
@@ -111,6 +125,7 @@ These configuration setting should be set inside the src [bot-config.json](/src/
      * */
     followPassiveUsers?: boolean;
   }
+}
 ```
 
 ## Quick start

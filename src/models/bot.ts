@@ -23,13 +23,15 @@ export class Instabot {
     maxDislikesPerDay: 1000,
     maxFollowsPerDay: 300,
     maxUnfollowsPerDay: 300,
-    minUnfollowWaitTime: 1440,
+    minUnfollowWaitTime: 4320, // minutes... -> 72 hours
+    minDislikeWaitTime: 1440, // minutes... -> 24 hours
     maxFollowsPerHashtag: 20,
     maxLikesToLikeMedia: 600,
     minLikesToLikeMedia: 5,
     hashtags: ['follow4follow', 'f4f', 'beer', 'l4l', 'like4like'],
     maxLikesPerHashtag: 50,
     sleepTime: 4,
+    waitTimeBeforeDelete: 10080, // minutes... -> 1 week
     followerOptions: {
       unwantedUsernames: [],
       followFakeUsers: false,
@@ -61,6 +63,8 @@ export class Instabot {
   public readonly followSleep: number; // in seconds
   /*minimum wait time for the bot before it can unfollow an followed user*/
   public readonly unfollowWaitTime: number; // in seconds
+  /*minimum wait time for the bot before it can dislike an liked mediapost*/
+  private readonly dislikeWaitTime: number; // in seconds
   /*List of all userIds that some posts were liked*/
   private userIdOfLikedPosts: string[] = [];
   /*if the bot is current sleeping*/
@@ -117,23 +121,24 @@ export class Instabot {
     // attention: its calculated but still random
     // and 2/3 of the real time bcs the dislike time starts after 1/3 of the time
     this.likeSleep = Math.floor(
-      (this.timeInDay - this.sleepTimeInSecs) /
-        this.config.maxLikesPerDay *
-        (2 / 3),
+      (this.timeInDay - this.sleepTimeInSecs) / this.config.maxLikesPerDay,
     );
 
     // time to wait to follow next again,
     // attention: its calculated but still random
     // and 2/3 of the real time bcs the unfollow time starts after 1/3 of the time
     this.followSleep = Math.floor(
-      (this.timeInDay - this.sleepTimeInSecs) /
-        this.config.maxFollowsPerDay *
-        (2 / 3),
+      (this.timeInDay - this.sleepTimeInSecs) / this.config.maxFollowsPerDay,
     );
 
     // minimum wait time so the bot can unfollow followed users
     // converting minutes (from config) to seconds
     this.unfollowWaitTime = Math.floor(this.config.minUnfollowWaitTime * 60);
+    this.dislikeWaitTime = Math.floor(this.config.minDislikeWaitTime * 60);
+
+    this.storageService.setWaitTimeBeforeDelete(
+      this.config.waitTimeBeforeDelete,
+    );
   }
 
   /**
@@ -142,8 +147,7 @@ export class Instabot {
    * */
   public async initBot(): Promise<any> {
     if (this.canStart !== true) {
-      this.shutDown();
-      return Promise.reject(
+      return this.shutDown(
         Utils.getShutdownMessage(
           'Username or/and Password are missing. You need to provide your credentials inside the bot-config.json file!',
         ),
@@ -190,7 +194,7 @@ export class Instabot {
     const followers = this.storageService.getFollowers();
     const likes = this.storageService.getLikes();
     const dislikes = this.storageService.getDisLikes();
-    const unfollows = this.storageService.getUnFollows();
+    const unfollows = this.storageService.getUnfollowed();
 
     const todayFollowers = Object.keys(followers).filter(key => {
       try {
@@ -454,6 +458,7 @@ export class Instabot {
     }
   }
 
+
   /**
    * Follows user of liked posts (more natural) or if startAutoLikeByTagMode is not started
    * it just searches users based on hashtags and follows them
@@ -615,13 +620,13 @@ export class Instabot {
       // should start now
       if (
         this.dislikesCountCurrentDay < this.config.maxDislikesPerDay &&
-        this.storageService.getLikesLength() > 0
+        this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0
       ) {
         await this.startDislikeLiked(withSleep);
         await Utils.sleep(this.getLikeSleepTime() * 8);
         if (
           this.dislikesCountCurrentDay < this.config.maxDislikesPerDay &&
-          this.storageService.getLikesLength() > 0
+          this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0
         ) {
           return this.startAutoDislike(withSleep);
         } else {
@@ -1053,6 +1058,7 @@ export class Instabot {
     this.unfollowCountCurrentDay = 0;
     this.likesCountCurrentDay = 0;
     this.dislikesCountCurrentDay = 0;
+    this.storageService.cleanUp();
   }
 
   /**
@@ -1199,7 +1205,7 @@ export class Instabot {
    * */
   private shouldStartDislike() {
     return (
-      this.likesCountCurrentDay >= 1 / 3 * this.config.maxLikesPerDay &&
+      this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0 &&
       this.isDisliking === false
     );
   }
@@ -1227,9 +1233,12 @@ export class Instabot {
   /**
    * method to shutdown the bot (kills the node process)
    * */
-  private async shutDown() {
+  private async shutDown(message?: string) {
     // sleeps just so all console logs on the end can be written,
     // before the process gets killed
+    if (message) {
+      Utils.writeLog(message);
+    }
     await Utils.sleepSecs(1);
     process.exit();
   }

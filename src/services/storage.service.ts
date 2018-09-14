@@ -17,6 +17,8 @@ export class StorageService {
   protected readonly likesPath: string = 'likes';
   protected readonly dislikesPath: string = 'dislikes';
 
+
+
   private adapter = new FileSync('db.json', {
     defaultValue: {
       [this.followerPath]: {},
@@ -30,7 +32,9 @@ export class StorageService {
 
   database;
 
-  constructor() {
+  constructor(
+    private waitTimeBeforeDeleteData: number = 10080 /*in minutes - ...one week to delete data*/,
+  ) {
     this.database = new low(this.adapter);
 
     let followers: UserMap = this.getFollowers();
@@ -38,6 +42,7 @@ export class StorageService {
       followers = {};
     }
 
+    this.setWaitTimeBeforeDelete(this.waitTimeBeforeDeleteData);
     this.setFollowers(followers);
     let likes: LikeMap = this.getLikes();
     if (likes == null) {
@@ -45,6 +50,13 @@ export class StorageService {
     }
 
     this.setLikes(likes);
+  }
+
+  /**
+   * method to set the wait-time before outdated data gets deleted
+   * */
+  public setWaitTimeBeforeDelete(minutes: number){
+    this.waitTimeBeforeDeleteData = minutes * 60;
   }
 
   /**
@@ -61,12 +73,12 @@ export class StorageService {
   /**
    * get all unfollowed users
    * */
-  public getUnFollows(): UserMap {
+  public getUnfollowed(): UserMap {
     return this.database.get(this.unfollowsPath).value();
   }
 
   public getUnFollowsLength() {
-    return Object.keys(this.getUnFollows()).length;
+    return Object.keys(this.getUnfollowed()).length;
   }
 
   /**
@@ -89,6 +101,40 @@ export class StorageService {
 
   public getDisLikesLength() {
     return Object.keys(this.getDisLikes()).length;
+  }
+
+  /**
+   * method to clear out all outdated data of the database
+   * */
+  public cleanUp(): void {
+    const unfollowed = this.getUnfollowed();
+    const disliked = this.getDisLikes();
+    /*clean up unfollowed*/
+    Object.keys(unfollowed).forEach(key => {
+      if (
+        new Date(
+          unfollowed[key] + this.waitTimeBeforeDeleteData * 1000,
+        ).getTime() < new Date(Date.now()).getTime()
+      ) {
+        // can delete, time passed
+        delete unfollowed[key];
+      }
+    });
+
+    /*clean up dislikes*/
+    Object.keys(disliked).forEach(key => {
+      if (
+        new Date(
+          disliked[key] + this.waitTimeBeforeDeleteData * 1000,
+        ).getTime() < new Date(Date.now()).getTime()
+      ) {
+        // can delete, time passed
+        delete disliked[key];
+      }
+    });
+
+    this.setUnFollows(unfollowed);
+    this.setDisLikes(disliked);
   }
 
   /**
@@ -135,13 +181,13 @@ export class StorageService {
    * */
   public canFollow(userId: string): boolean {
     const followers = this.getFollowers();
-    const unfollows = this.getUnFollows();
+    const unfollows = this.getUnfollowed();
     return followers[userId] == null && unfollows[userId] == null;
   }
 
   /**
    * method to get all unfollowable users at the current moment.
-   * @param unfollowAllowedTime, min seconds that passed by to declare user to be unfollowable
+   * @param unfollowAllowedTime, minimum seconds that passed by to declare user to be unfollowable
    * @retuns object containing all users that can be unfollowed at the moment
    * */
   public getUnfollowable(unfollowAllowedTime: number = 86400): UserMap {
@@ -160,11 +206,35 @@ export class StorageService {
   }
 
   /**
+   * method to get all dislikeable users at the current moment.
+   * @param dislikeAllowTime, minimum seconds that passed by to declare user to be dislikeable
+   * @retuns object containing all posts that can be disliked at the moment
+   * */
+  public getDislikeable(dislikeAllowTime: number = 86400): LikeMap {
+    const likes = this.getLikes();
+    const canDislike = {};
+    Object.keys(likes).forEach(key => {
+      if (
+        new Date(likes[key] + dislikeAllowTime * 1000).getTime() <
+        new Date(Date.now()).getTime()
+      ) {
+        // can unfollow, time passed
+        canDislike[key] = likes[key];
+      }
+    });
+    return canDislike;
+  }
+
+  /**
    * get number of the unfollowable users
    * @returns count of the unfollowable users
    * */
   public getUnfollowableLength(time: number = 86400): number {
     return Object.keys(this.getUnfollowable(time)).length;
+  }
+
+  public getDislikeableLength(time: number = 86400):number {
+    return Object.keys(this.getDislikeable(time)).length;
   }
 
   /**
@@ -213,7 +283,7 @@ export class StorageService {
    * Add user to the already followed and unfollowed again list
    * */
   private addUnfollowed(userId: string) {
-    const unfollows = this.getUnFollows();
+    const unfollows = this.getUnfollowed();
     unfollows[userId] = Date.now();
     this.setUnFollows(unfollows);
   }
