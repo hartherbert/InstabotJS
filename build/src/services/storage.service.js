@@ -3,7 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const FileSync = require('lowdb/adapters/FileSync');
 const low = require('lowdb');
 class StorageService {
-    constructor() {
+    constructor(waitTimeBeforeDeleteData = 10080) {
+        this.waitTimeBeforeDeleteData = waitTimeBeforeDeleteData;
         this.followerPath = 'followers';
         this.unfollowsPath = 'unfollows';
         this.likesPath = 'likes';
@@ -23,6 +24,7 @@ class StorageService {
         if (followers == null) {
             followers = {};
         }
+        this.setWaitTimeBeforeDelete(this.waitTimeBeforeDeleteData);
         this.setFollowers(followers);
         let likes = this.getLikes();
         if (likes == null) {
@@ -30,17 +32,20 @@ class StorageService {
         }
         this.setLikes(likes);
     }
+    setWaitTimeBeforeDelete(minutes) {
+        this.waitTimeBeforeDeleteData = minutes * 60;
+    }
     getFollowers() {
         return this.database.get(this.followerPath).value();
     }
     getFollowersLength() {
         return Object.keys(this.getFollowers()).length;
     }
-    getUnFollows() {
+    getUnfollowed() {
         return this.database.get(this.unfollowsPath).value();
     }
     getUnFollowsLength() {
-        return Object.keys(this.getUnFollows()).length;
+        return Object.keys(this.getUnfollowed()).length;
     }
     getLikes() {
         return this.database.get(this.likesPath).value();
@@ -53,6 +58,22 @@ class StorageService {
     }
     getDisLikesLength() {
         return Object.keys(this.getDisLikes()).length;
+    }
+    cleanUp() {
+        const unfollowed = this.getUnfollowed();
+        const disliked = this.getDisLikes();
+        Object.keys(unfollowed).forEach(key => {
+            if (new Date(unfollowed[key] + this.waitTimeBeforeDeleteData * 1000).getTime() < new Date(Date.now()).getTime()) {
+                delete unfollowed[key];
+            }
+        });
+        Object.keys(disliked).forEach(key => {
+            if (new Date(disliked[key] + this.waitTimeBeforeDeleteData * 1000).getTime() < new Date(Date.now()).getTime()) {
+                delete disliked[key];
+            }
+        });
+        this.setUnFollows(unfollowed);
+        this.setDisLikes(disliked);
     }
     setFollowers(followers) {
         this.database.get(this.followerPath).write(followers);
@@ -73,7 +94,7 @@ class StorageService {
     }
     canFollow(userId) {
         const followers = this.getFollowers();
-        const unfollows = this.getUnFollows();
+        const unfollows = this.getUnfollowed();
         return followers[userId] == null && unfollows[userId] == null;
     }
     getUnfollowable(unfollowAllowedTime = 86400) {
@@ -87,8 +108,22 @@ class StorageService {
         });
         return canUnfollow;
     }
+    getDislikeable(dislikeAllowTime = 86400) {
+        const likes = this.getLikes();
+        const canDislike = {};
+        Object.keys(likes).forEach(key => {
+            if (new Date(likes[key] + dislikeAllowTime * 1000).getTime() <
+                new Date(Date.now()).getTime()) {
+                canDislike[key] = likes[key];
+            }
+        });
+        return canDislike;
+    }
     getUnfollowableLength(time = 86400) {
         return Object.keys(this.getUnfollowable(time)).length;
+    }
+    getDislikeableLength(time = 86400) {
+        return Object.keys(this.getDislikeable(time)).length;
     }
     addFollower(followerId) {
         const followers = this.getFollowers();
@@ -117,7 +152,7 @@ class StorageService {
         this.setLikes(likes);
     }
     addUnfollowed(userId) {
-        const unfollows = this.getUnFollows();
+        const unfollows = this.getUnfollowed();
         unfollows[userId] = Date.now();
         this.setUnFollows(unfollows);
     }

@@ -104,6 +104,7 @@
     "maxLikesToLikeMedia": 600,
     "minLikesToLikeMedia": 8,
     "sleepTime": 5,
+    "waitTimeBeforeDelete":10080,
     "followOptions": {
       "followFakeUsers": false,
       "followSelebgramUsers": false,

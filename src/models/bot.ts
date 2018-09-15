@@ -458,6 +458,12 @@ export class Instabot {
     }
   }
 
+  /**
+   * Recursive function to follow users and like posts on own profile from random users (based on the own post likes)
+   * */
+  public async startAutoCheckOwnProfileMode(): Promise<any>{
+    // Todo
+  }
 
   /**
    * Follows user of liked posts (more natural) or if startAutoLikeByTagMode is not started

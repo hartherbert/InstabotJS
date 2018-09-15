@@ -12,13 +12,15 @@ class Instabot {
             maxDislikesPerDay: 1000,
             maxFollowsPerDay: 300,
             maxUnfollowsPerDay: 300,
-            minUnfollowWaitTime: 1440,
+            minUnfollowWaitTime: 4320,
+            minDislikeWaitTime: 1440,
             maxFollowsPerHashtag: 20,
             maxLikesToLikeMedia: 600,
             minLikesToLikeMedia: 5,
             hashtags: ['follow4follow', 'f4f', 'beer', 'l4l', 'like4like'],
             maxLikesPerHashtag: 50,
             sleepTime: 4,
+            waitTimeBeforeDelete: 10080,
             followerOptions: {
                 unwantedUsernames: [],
                 followFakeUsers: false,
@@ -51,19 +53,16 @@ class Instabot {
         this.config = Object.assign({}, this.defaultConfig, options.config);
         this.registeredRoutines = {};
         this.sleepTimeInSecs = Math.floor(this.config.sleepTime * 60 * 60);
-        this.likeSleep = Math.floor((this.timeInDay - this.sleepTimeInSecs) /
-            this.config.maxLikesPerDay *
-            (2 / 3));
-        this.followSleep = Math.floor((this.timeInDay - this.sleepTimeInSecs) /
-            this.config.maxFollowsPerDay *
-            (2 / 3));
+        this.likeSleep = Math.floor((this.timeInDay - this.sleepTimeInSecs) / this.config.maxLikesPerDay);
+        this.followSleep = Math.floor((this.timeInDay - this.sleepTimeInSecs) / this.config.maxFollowsPerDay);
         this.unfollowWaitTime = Math.floor(this.config.minUnfollowWaitTime * 60);
+        this.dislikeWaitTime = Math.floor(this.config.minDislikeWaitTime * 60);
+        this.storageService.setWaitTimeBeforeDelete(this.config.waitTimeBeforeDelete);
     }
     initBot() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             if (this.canStart !== true) {
-                this.shutDown();
-                return Promise.reject(utils_1.Utils.getShutdownMessage('Username or/and Password are missing. You need to provide your credentials inside the bot-config.json file!'));
+                return this.shutDown(utils_1.Utils.getShutdownMessage('Username or/and Password are missing. You need to provide your credentials inside the bot-config.json file!'));
             }
             try {
                 this.collectPreviousData();
@@ -279,6 +278,10 @@ class Instabot {
             }
         });
     }
+    startAutoCheckOwnProfileMode() {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+        });
+    }
     startAutoFollow(withSleep = true) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
@@ -388,11 +391,11 @@ class Instabot {
                 }
                 this.registerRoutine('startAutoDislike', this.startAutoDislike);
                 if (this.dislikesCountCurrentDay < this.config.maxDislikesPerDay &&
-                    this.storageService.getLikesLength() > 0) {
+                    this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0) {
                     yield this.startDislikeLiked(withSleep);
                     yield utils_1.Utils.sleep(this.getLikeSleepTime() * 8);
                     if (this.dislikesCountCurrentDay < this.config.maxDislikesPerDay &&
-                        this.storageService.getLikesLength() > 0) {
+                        this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0) {
                         return this.startAutoDislike(withSleep);
                     }
                     else {
@@ -672,6 +675,7 @@ class Instabot {
         this.unfollowCountCurrentDay = 0;
         this.likesCountCurrentDay = 0;
         this.dislikesCountCurrentDay = 0;
+        this.storageService.cleanUp();
     }
     getBotToSleep() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
@@ -767,7 +771,7 @@ class Instabot {
             this.isUnfollowing === false);
     }
     shouldStartDislike() {
-        return (this.likesCountCurrentDay >= 1 / 3 * this.config.maxLikesPerDay &&
+        return (this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0 &&
             this.isDisliking === false);
     }
     restartRoutines() {
@@ -786,8 +790,11 @@ class Instabot {
             return Promise.resolve();
         });
     }
-    shutDown() {
+    shutDown(message) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            if (message) {
+                utils_1.Utils.writeLog(message);
+            }
             yield utils_1.Utils.sleepSecs(1);
             process.exit();
         });
