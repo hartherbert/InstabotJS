@@ -1,8 +1,8 @@
 import { Utils } from '../utils/utils';
 import { UserAccount, UserAccountOptions } from '../models/user-account';
-import FormData = require('form-data');
 import fetch, { Response } from 'node-fetch';
 import { convertToMediaPosts, MediaPost } from '../models/post';
+import FormData = require('form-data');
 
 export interface IResult<T> {
   status: number;
@@ -41,11 +41,6 @@ const EndPoints = {
 
 export class HttpService {
   // region Internal Variables
-
-  /**
-   * Which languages should be set on the header
-   * */
-  private language: string = 'en-US;q=0.9,en;q=0.8,es;q=0.7';
 
   /**
    * Random user-agent to be used, consistent from the beginning
@@ -93,7 +88,10 @@ export class HttpService {
 
   // endregion
 
-  constructor() {}
+  /**
+   * Which languages should be set on the header
+   * */
+  constructor(private language: string = 'en-US;q=0.9,en;q=0.8,es;q=0.7') {}
 
   /**
    * Get csrf token
@@ -130,6 +128,23 @@ export class HttpService {
     });
   }
 
+  private getFormDataPairs(data: object, pairs: string[] = []): string[] {
+    // Turn the data object into an array of URL-encoded key/value pairs.
+    for (let name in data) {
+      pairs.push(
+        encodeURIComponent(name) + '=' + encodeURIComponent(data[name]),
+      );
+    }
+    return pairs;
+  }
+
+  private getFormData(data: object) {
+    const pairs = this.getFormDataPairs(data);
+    // Combine the pairs into a single string and replace all %-encoded spaces to
+    // the '+' character; matches the behaviour of browser form submissions.
+    return pairs.join('&').replace(/%20/g, '+');
+  }
+
   /**
    * Session id by username and password
    * @return {any} Promise
@@ -139,12 +154,12 @@ export class HttpService {
     username: string;
     password: string;
   }): Promise<IResult<string>> {
-    const formdata =
-      'username=' +
-      credentials.username +
-      '&password=' +
-      credentials.password +
-      '&queryParams=%7B%7D';
+    /*let yes = true;*/
+
+    const formdata = this.getFormData({
+      username: credentials.username,
+      password: credentials.password
+    });
 
     let options = {
       method: 'POST',
@@ -158,17 +173,44 @@ export class HttpService {
         'x-csrftoken': this.csrfToken,
         'x-instagram-ajax': this.rollout_hash,
         'x-requested-with': 'XMLHttpRequest',
+        referer:
+          'https://www.instagram.com/accounts/login/?source=auth_switcher',
       }),
     };
 
     return new Promise<IResult<string>>((resolve, reject) => {
       fetch(EndPoints.login(), options)
         .then(response => {
-          this.updateEssentialValues(response.headers.raw()['set-cookie']);
+          return response
+            .json()
+            .then(json => {
+              if (
+                json &&
+                json['authenticated'] === true &&
+                json['user'] === true
+              ) {
+                this.updateEssentialValues(
+                  response.headers.raw()['set-cookie'],
+                );
+                this.sessionId = this.essentialCookies.sessionid;
+                return resolve(
+                  Utils.getResult(response, this.essentialCookies.sessionid),
+                );
+              } else {
+                return reject('Authentication failed... Is your username and your password right?');
+              }
+            })
+            .catch(() => {
+              //json error, not right response, login failed
+              return reject(
+                'Could not login with your username and password... Try again.',
+              );
+            });
+          /*this.updateEssentialValues(response.headers.raw()['set-cookie']);
           this.sessionId = this.essentialCookies.sessionid;
           return resolve(
             Utils.getResult(response, this.essentialCookies.sessionid),
-          );
+          );*/
         })
         .catch(() => {
           return reject(
@@ -328,6 +370,36 @@ export class HttpService {
         headers: this.getHeaders(),
       })
         .then(response => {
+          /*return response
+            .text()
+            .then(text => {
+              try {
+                let userData = this.getSharedData(text)['entry_data'][
+                  'ProfilePage'
+                ][0]['graphql']['user'];
+                return resolve(
+                  Utils.getResult(
+                    response,
+                    UserAccount.getUserByProfileData(userData, options),
+                  ),
+                );
+              } catch (e) {
+                console.error('getUserInfo text error', e);
+                return resolve({
+                  status: 500,
+                  success: false,
+                  data: null,
+                });
+              }
+            })
+            .catch(err => {
+              console.error('getUserInfo text error', err);
+              return resolve({
+                status: 500,
+                success: false,
+                data: null,
+              });
+            });*/
           return response
             .json()
             .then(json => {
@@ -532,6 +604,18 @@ export class HttpService {
   // endregion
 
   // region HelperFunctions
+
+  /*private getSharedData(htmlText: string): object {
+    try {
+      if (htmlText) {
+        return JSON.parse(Matchers.sharedData.exec(htmlText)[1]);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+  }*/
 
   /*private getSharedData(htmlText: string): object {
     try {

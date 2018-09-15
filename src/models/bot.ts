@@ -293,6 +293,7 @@ export class Instabot {
                 'Could not get CSRF-Token from Instagram... Is your IP blocked by Instagram ?',
               );
             }
+            Utils.writeLog('Successfully got the CSRF-Token', 'Login');
             // successful request, got csrf
             Utils.sleep().then(() => {
               this.apiService
@@ -309,6 +310,7 @@ export class Instabot {
                         } , Password: ${this.password}`,
                       );
                     }
+                    Utils.writeLog('Only one step left...', 'Login');
                     // logged in successfully
                     Utils.sleep().then(() => {
                       this.apiService
@@ -388,6 +390,14 @@ export class Instabot {
     }
   }
 
+  private async getStartRoutineSleepTime(): Promise<any> {
+    const sleepSecs = Utils.getRandomInt(1, 180);
+    Utils.writeLog(
+      'Bot sleeping now for ' + sleepSecs + ' before starting routine',
+    );
+    return Utils.sleep(sleepSecs * 1000);
+  }
+
   /**
    * Recursive function to like posts on instagram from random users (based on the hashtags in the config)
    * */
@@ -415,6 +425,8 @@ export class Instabot {
         );
         return Promise.resolve();
       }
+
+      await this.getStartRoutineSleepTime();
 
       // get any hashtag from map
       const hashtag: string = this.getRandomHashtag();
@@ -461,7 +473,7 @@ export class Instabot {
   /**
    * Recursive function to follow users and like posts on own profile from random users (based on the own post likes)
    * */
-  public async startAutoCheckOwnProfileMode(): Promise<any>{
+  public async startAutoCheckOwnProfileMode(): Promise<any> {
     // Todo
   }
 
@@ -480,6 +492,8 @@ export class Instabot {
       if (!this.isLoggedIn) {
         await this.initBot();
       }
+
+      await this.getStartRoutineSleepTime();
 
       if (
         this.userIdOfLikedPosts.length > 5 &&
@@ -552,6 +566,8 @@ export class Instabot {
         this.registerRoutine('startAutoUnfollow', this.startAutoUnfollow);
       }
 
+      await this.getStartRoutineSleepTime();
+
       /*if (this.shouldStartUnfollow() !== true) {
         await Utils.sleepSecs(this.getFollowSleepTime() * 4);
         return this.startAutoUnfollow(withSleep);
@@ -607,7 +623,10 @@ export class Instabot {
    * Dislikes posts that had been liked before
    * is called automatically after 1/3 of the likes of the current day were made
    * */
-  public async startAutoDislike(withSleep: boolean = true) {
+  public async startAutoDislike(
+    withSleep: boolean = true,
+    isAutoStarted: boolean = true,
+  ) {
     try {
       if (this.botIsAsleep === true) {
         return Promise.resolve();
@@ -621,7 +640,11 @@ export class Instabot {
         await this.initBot();
       }
 
-      this.registerRoutine('startAutoDislike', this.startAutoDislike);
+      if (isAutoStarted === false) {
+        this.registerRoutine('startAutoDislike', this.startAutoDislike);
+      }
+
+      await this.getStartRoutineSleepTime();
 
       // should start now
       if (
@@ -913,10 +936,7 @@ export class Instabot {
               continue;
             } else {
               this.followedNewUser(user);
-
-              if (withSleep === true) {
-                await this.startFollowSleep(withSleep);
-              }
+              await this.startFollowSleep(withSleep);
             }
           } else {
             Utils.writeLog(`Not following user: ${user.canFollowReason()}`);
@@ -1139,11 +1159,7 @@ export class Instabot {
           continue;
         } else {
           this.unfollowedNewUser(userId);
-          if (withSleep === true) {
-            await this.startUnfollowSleep(withSleep);
-          } else {
-            await Utils.sleep();
-          }
+          await this.startUnfollowSleep(withSleep);
         }
       } catch (e) {
         console.error(

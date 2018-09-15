@@ -2,9 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const utils_1 = require("../utils/utils");
 const user_account_1 = require("../models/user-account");
-const FormData = require("form-data");
 const node_fetch_1 = require("node-fetch");
 const post_1 = require("../models/post");
+const FormData = require("form-data");
 const EndPoints = {
     baseUrl: 'https://www.instagram.com/',
     feed: () => `${EndPoints.baseUrl}?__a=1`,
@@ -21,8 +21,8 @@ const EndPoints = {
     getUsersThatLikedMedia: (shortcode, first) => `${EndPoints.baseUrl}graphql/query/?query_hash=e0f59e4a1c8d78d0161873bc2ee7ec44&variables=%7B%22shortcode%22%3A%22${shortcode}%22%2C%22include_reel%22%3Afalse%2C%22first%22%3A${first}%7D`,
 };
 class HttpService {
-    constructor() {
-        this.language = 'en-US;q=0.9,en;q=0.8,es;q=0.7';
+    constructor(language = 'en-US;q=0.9,en;q=0.8,es;q=0.7') {
+        this.language = language;
         this.userAgent = utils_1.Utils.getFakeUserAgent();
         this.csrfToken = undefined;
         this.sessionId = undefined;
@@ -74,12 +74,21 @@ class HttpService {
             });
         });
     }
+    getFormDataPairs(data, pairs = []) {
+        for (let name in data) {
+            pairs.push(encodeURIComponent(name) + '=' + encodeURIComponent(data[name]));
+        }
+        return pairs;
+    }
+    getFormData(data) {
+        const pairs = this.getFormDataPairs(data);
+        return pairs.join('&').replace(/%20/g, '+');
+    }
     login(credentials) {
-        const formdata = 'username=' +
-            credentials.username +
-            '&password=' +
-            credentials.password +
-            '&queryParams=%7B%7D';
+        const formdata = this.getFormData({
+            username: credentials.username,
+            password: credentials.password
+        });
         let options = {
             method: 'POST',
             body: formdata,
@@ -92,14 +101,29 @@ class HttpService {
                 'x-csrftoken': this.csrfToken,
                 'x-instagram-ajax': this.rollout_hash,
                 'x-requested-with': 'XMLHttpRequest',
+                referer: 'https://www.instagram.com/accounts/login/?source=auth_switcher',
             }),
         };
         return new Promise((resolve, reject) => {
             node_fetch_1.default(EndPoints.login(), options)
                 .then(response => {
-                this.updateEssentialValues(response.headers.raw()['set-cookie']);
-                this.sessionId = this.essentialCookies.sessionid;
-                return resolve(utils_1.Utils.getResult(response, this.essentialCookies.sessionid));
+                return response
+                    .json()
+                    .then(json => {
+                    if (json &&
+                        json['authenticated'] === true &&
+                        json['user'] === true) {
+                        this.updateEssentialValues(response.headers.raw()['set-cookie']);
+                        this.sessionId = this.essentialCookies.sessionid;
+                        return resolve(utils_1.Utils.getResult(response, this.essentialCookies.sessionid));
+                    }
+                    else {
+                        return reject('Authentication failed... Is your username and your password right?');
+                    }
+                })
+                    .catch(() => {
+                    return reject('Could not login with your username and password... Try again.');
+                });
             })
                 .catch(() => {
                 return reject('Could not login with your username and password... Try again.');

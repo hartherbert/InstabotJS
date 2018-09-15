@@ -8,7 +8,6 @@
     "node": ">= 8.9.0"
   },
   "dependencies": {
-    "form-data": "^2.3.2",
     "lowdb": "^1.0.0",
     "node-fetch": "^2.2.0",
     "read-config": "^2.0.0",

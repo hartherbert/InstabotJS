@@ -1,6 +1,7 @@
 import { Response } from 'node-fetch';
 import { IResult } from '../services/http.service';
 
+
 export class Utils {
   public static getPostsOfHashtagGraphQL(data: object) {
     if (data && data['graphql']) {
@@ -36,10 +37,10 @@ export class Utils {
   /**
    * Returns a random integer between min (inclusive) and max (inclusive)
    * Using Math.round() will give you a non-uniform distribution!
-   * @returns a number between 45000 and 28000 (45secs - 28secs)
+   * @returns a number between 67secs - 34secs (67000 - 34000)
    */
   public static getDefaultRandom() {
-    return Utils.getRandomInt(55, 32) * 1000;
+    return Utils.getRandomInt(67, 34) * 1000;
   }
 
   public static getDateString(time: Date): string {
@@ -69,7 +70,6 @@ export class Utils {
   public static writeLog(
     message: string,
     prefix?: string,
-    ...anyObject: any[]
   ) {
     if (!prefix) {
       prefix = 'Log';
@@ -79,9 +79,6 @@ export class Utils {
       ':',
       message,
     );
-    if (anyObject && anyObject.length > 0) {
-      console.dir(anyObject);
-    }
   }
 
   public static writeProgress(message: string) {

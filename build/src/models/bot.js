@@ -165,6 +165,7 @@ class Instabot {
                     if (success === false) {
                         return reject('Could not get CSRF-Token from Instagram... Is your IP blocked by Instagram ?');
                     }
+                    utils_1.Utils.writeLog('Successfully got the CSRF-Token', 'Login');
                     utils_1.Utils.sleep().then(() => {
                         this.apiService
                             .login({
@@ -176,6 +177,7 @@ class Instabot {
                                 if (success === false) {
                                     return reject(`Could not login with the provided credentials... Username: ${this.username} , Password: ${this.password}`);
                                 }
+                                utils_1.Utils.writeLog('Only one step left...', 'Login');
                                 utils_1.Utils.sleep().then(() => {
                                     this.apiService
                                         .getUserInfo(this.username, Object.assign({}, this.config.followerOptions))
@@ -235,6 +237,13 @@ class Instabot {
             this.registeredRoutines[id] = routine;
         }
     }
+    getStartRoutineSleepTime() {
+        return tslib_1.__awaiter(this, void 0, void 0, function* () {
+            const sleepSecs = utils_1.Utils.getRandomInt(1, 180);
+            utils_1.Utils.writeLog('Bot sleeping now for ' + sleepSecs + ' before starting routine');
+            return utils_1.Utils.sleep(sleepSecs * 1000);
+        });
+    }
     startAutoLikeByTagMode() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
@@ -249,6 +258,7 @@ class Instabot {
                     utils_1.Utils.writeLog('Todays Like limit is reached, pausing now.', 'startAutoLikeByTagMode');
                     return Promise.resolve();
                 }
+                yield this.getStartRoutineSleepTime();
                 const hashtag = this.getRandomHashtag();
                 utils_1.Utils.writeLog('Selected new hashtag: ' + hashtag);
                 const result = yield this.apiService.getMediaByHashtag(hashtag);
@@ -292,6 +302,7 @@ class Instabot {
                 if (!this.isLoggedIn) {
                     yield this.initBot();
                 }
+                yield this.getStartRoutineSleepTime();
                 if (this.userIdOfLikedPosts.length > 5 &&
                     this.followCountCurrentDay < this.config.maxFollowsPerDay) {
                     yield this.followAllUsersById(this.userIdOfLikedPosts);
@@ -344,6 +355,7 @@ class Instabot {
                 if (isAutoStarted === false) {
                     this.registerRoutine('startAutoUnfollow', this.startAutoUnfollow);
                 }
+                yield this.getStartRoutineSleepTime();
                 if (this.unfollowCountCurrentDay < this.config.maxUnfollowsPerDay &&
                     this.storageService.getUnfollowableLength(this.unfollowWaitTime) > 0) {
                     yield this.startUnfollowFollowed(withSleep);
@@ -377,7 +389,7 @@ class Instabot {
             }
         });
     }
-    startAutoDislike(withSleep = true) {
+    startAutoDislike(withSleep = true, isAutoStarted = true) {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {
             try {
                 if (this.botIsAsleep === true) {
@@ -389,7 +401,10 @@ class Instabot {
                 if (this.isLoggedIn !== true) {
                     yield this.initBot();
                 }
-                this.registerRoutine('startAutoDislike', this.startAutoDislike);
+                if (isAutoStarted === false) {
+                    this.registerRoutine('startAutoDislike', this.startAutoDislike);
+                }
+                yield this.getStartRoutineSleepTime();
                 if (this.dislikesCountCurrentDay < this.config.maxDislikesPerDay &&
                     this.storageService.getDislikeableLength(this.dislikeWaitTime) > 0) {
                     yield this.startDislikeLiked(withSleep);
@@ -594,9 +609,7 @@ class Instabot {
                             }
                             else {
                                 this.followedNewUser(user);
-                                if (withSleep === true) {
-                                    yield this.startFollowSleep(withSleep);
-                                }
+                                yield this.startFollowSleep(withSleep);
                             }
                         }
                         else {
@@ -716,12 +729,7 @@ class Instabot {
                     }
                     else {
                         this.unfollowedNewUser(userId);
-                        if (withSleep === true) {
-                            yield this.startUnfollowSleep(withSleep);
-                        }
-                        else {
-                            yield utils_1.Utils.sleep();
-                        }
+                        yield this.startUnfollowSleep(withSleep);
                     }
                 }
                 catch (e) {

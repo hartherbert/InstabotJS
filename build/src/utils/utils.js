@@ -23,7 +23,7 @@ class Utils {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
     static getDefaultRandom() {
-        return Utils.getRandomInt(55, 32) * 1000;
+        return Utils.getRandomInt(67, 34) * 1000;
     }
     static getDateString(time) {
         return time.toLocaleDateString('en', {
@@ -45,14 +45,11 @@ class Utils {
             hour12: false,
         });
     }
-    static writeLog(message, prefix, ...anyObject) {
+    static writeLog(message, prefix) {
         if (!prefix) {
             prefix = 'Log';
         }
         console.log(Utils.getTimeString(new Date(Date.now())) + ' -> ' + prefix, ':', message);
-        if (anyObject && anyObject.length > 0) {
-            console.dir(anyObject);
-        }
     }
     static writeProgress(message) {
         process.stdout.write(`${message} \r`);
