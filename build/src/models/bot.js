@@ -57,7 +57,6 @@ class Instabot {
         this.followSleep = Math.floor((this.timeInDay - this.sleepTimeInSecs) / this.config.maxFollowsPerDay);
         this.unfollowWaitTime = Math.floor(this.config.minUnfollowWaitTime * 60);
         this.dislikeWaitTime = Math.floor(this.config.minDislikeWaitTime * 60);
-        this.storageService.setWaitTimeBeforeDelete(this.config.waitTimeBeforeDelete);
     }
     initBot() {
         return tslib_1.__awaiter(this, void 0, void 0, function* () {

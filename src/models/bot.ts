@@ -136,9 +136,9 @@ export class Instabot {
     this.unfollowWaitTime = Math.floor(this.config.minUnfollowWaitTime * 60);
     this.dislikeWaitTime = Math.floor(this.config.minDislikeWaitTime * 60);
 
-    this.storageService.setWaitTimeBeforeDelete(
+    /*this.storageService.setWaitTimeBeforeDelete(
       this.config.waitTimeBeforeDelete,
-    );
+    );*/
   }
 
   /**

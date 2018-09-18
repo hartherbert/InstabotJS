@@ -1,11 +1,14 @@
 const FileSync = require('lowdb/adapters/FileSync');
 const low = require('lowdb');
 
+/**
+ * Map-Interfaces are only there to be able to quick develop features
+ * if there are more options needed to be stored in database
+ * */
 interface UserMap {
   [userId: string]: number;
   // id => (value:number = timestamp)
 }
-
 interface LikeMap {
   [postId: string]: number;
   // id => (value:number = timestamp)
@@ -17,7 +20,13 @@ export class StorageService {
   protected readonly likesPath: string = 'likes';
   protected readonly dislikesPath: string = 'dislikes';
 
-
+  protected readonly followerObject = followerId =>
+    `${this.followerPath}.${followerId}`;
+  protected readonly unfollowerObject = followerId =>
+    `${this.unfollowsPath}.${followerId}`;
+  protected readonly likeObject = postId => `${this.likesPath}.${postId}`;
+  protected readonly disLikeObject = dislikeId =>
+    `${this.dislikesPath}.${dislikeId}`;
 
   private adapter = new FileSync('db.json', {
     defaultValue: {
@@ -30,66 +39,107 @@ export class StorageService {
     deserialize: stringData => JSON.parse(stringData),
   });
 
-  database;
+  private database;
 
   constructor(
     private waitTimeBeforeDeleteData: number = 10080 /*in minutes - ...one week to delete data*/,
   ) {
     this.database = new low(this.adapter);
-
-    let followers: UserMap = this.getFollowers();
-    if (followers == null) {
-      followers = {};
-    }
-
     this.setWaitTimeBeforeDelete(this.waitTimeBeforeDeleteData);
-    this.setFollowers(followers);
-    let likes: LikeMap = this.getLikes();
-    if (likes == null) {
-      likes = {};
-    }
-
-    this.setLikes(likes);
   }
 
   /**
    * method to set the wait-time before outdated data gets deleted
    * */
-  public setWaitTimeBeforeDelete(minutes: number){
+  private setWaitTimeBeforeDelete(minutes: number) {
     this.waitTimeBeforeDeleteData = minutes * 60;
   }
 
+  //region has functions
   /**
-   * get all followed users
+   * checks if like exists in database
    * */
-  public getFollowers(): UserMap {
-    return this.database.get(this.followerPath).value();
+  public hasLike(postId: string): boolean {
+    return !!this.database.get(this.likeObject(postId)).value();
   }
 
+  /**
+   * checks if dislike exists in database
+   * */
+  public hasDisLike(postId: string): boolean {
+    return !!this.database.get(this.disLikeObject(postId)).value();
+  }
+
+  /**
+   * checks if follower exists in database
+   * */
+  public hasFollower(followerId: string): boolean {
+    return !!this.database.get(this.followerObject(followerId)).value();
+  }
+
+  /**
+   * checks if unfollowed exists in database
+   * */
+  public hasUnFollowed(followerId: string): boolean {
+    return !!this.database.get(this.unfollowerObject(followerId)).value();
+  }
+
+  //endregion
+
+  //region length functions
+  /**
+   * gets the actual count of likes in database
+   * */
+  public getLikesLength() {
+    return Object.keys(this.getLikes()).length;
+  }
+
+  /**
+   * gets the actual count of dislikes in database
+   * */
+  public getDisLikesLength() {
+    return Object.keys(this.getDisLikes()).length;
+  }
+
+  /**
+   * gets the actual count of followers in database
+   * */
   public getFollowersLength() {
     return Object.keys(this.getFollowers()).length;
   }
 
   /**
-   * get all unfollowed users
+   * gets the actual count of unfollowed in database
    * */
-  public getUnfollowed(): UserMap {
-    return this.database.get(this.unfollowsPath).value();
-  }
-
   public getUnFollowsLength() {
     return Object.keys(this.getUnfollowed()).length;
   }
+
+  /**
+   * get number of the unfollowable users
+   * @returns count of the unfollowable users
+   * */
+  public getUnfollowableLength(time: number = 86400): number {
+    return Object.keys(this.getUnfollowable(time)).length;
+  }
+
+  /**
+   * get number of the dislikeable posts
+   * @returns count of the dislikeable posts
+   * */
+  public getDislikeableLength(time: number = 86400): number {
+    return Object.keys(this.getDislikeable(time)).length;
+  }
+
+  //endregion
+
+  //region get all from object
 
   /**
    * get all likes
    * */
   public getLikes(): LikeMap {
     return this.database.get(this.likesPath).value();
-  }
-
-  public getLikesLength() {
-    return Object.keys(this.getLikes()).length;
   }
 
   /**
@@ -99,10 +149,23 @@ export class StorageService {
     return this.database.get(this.dislikesPath).value();
   }
 
-  public getDisLikesLength() {
-    return Object.keys(this.getDisLikes()).length;
+  /**
+   * get all followed users
+   * */
+  public getFollowers(): UserMap {
+    return this.database.get(this.followerPath).value();
   }
 
+  /**
+   * get all unfollowed users
+   * */
+  public getUnfollowed(): UserMap {
+    return this.database.get(this.unfollowsPath).value();
+  }
+
+  //endregion
+
+  //region clean functions
   /**
    * method to clear out all outdated data of the database
    * */
@@ -110,69 +173,47 @@ export class StorageService {
     const unfollowed = this.getUnfollowed();
     const disliked = this.getDisLikes();
     /*clean up unfollowed*/
-    Object.keys(unfollowed).forEach(key => {
+    Object.keys(unfollowed).forEach(userId => {
       if (
         new Date(
-          unfollowed[key] + this.waitTimeBeforeDeleteData * 1000,
+          unfollowed[userId] + this.waitTimeBeforeDeleteData * 1000,
         ).getTime() < new Date(Date.now()).getTime()
       ) {
         // can delete, time passed
-        delete unfollowed[key];
+        this.removeUnfollowed(userId);
       }
     });
 
     /*clean up dislikes*/
-    Object.keys(disliked).forEach(key => {
+    Object.keys(disliked).forEach(postId => {
       if (
         new Date(
-          disliked[key] + this.waitTimeBeforeDeleteData * 1000,
+          disliked[postId] + this.waitTimeBeforeDeleteData * 1000,
         ).getTime() < new Date(Date.now()).getTime()
       ) {
         // can delete, time passed
-        delete disliked[key];
+        this.removeDisLike(postId);
       }
     });
-
-    this.setUnFollows(unfollowed);
-    this.setDisLikes(disliked);
   }
 
-  /**
-   * set all followed users
-   * */
-  private setFollowers(followers: UserMap) {
-    this.database.get(this.followerPath).write(followers);
+  public wipeData(): void {
+    this.database.set(this.followerPath, {}).write();
+    this.database.set(this.unfollowsPath, {}).write();
+    this.database.set(this.likesPath, {}).write();
+    this.database.set(this.dislikesPath, {}).write();
   }
 
-  /**
-   * set all unfollowed users
-   * */
-  private setUnFollows(unfollows: UserMap) {
-    this.database.get(this.unfollowsPath).write(unfollows);
-  }
+  //endregion
 
-  /**
-   * set all likes
-   * */
-  private setLikes(likes: LikeMap) {
-    this.database.get(this.likesPath).write(likes);
-  }
-
-  /**
-   * set all dislikes
-   * */
-  private setDisLikes(dislikes: LikeMap) {
-    this.database.get(this.dislikesPath).write(dislikes);
-  }
+  //region can functions
 
   /**
    * if post with specific postId can be liked
    * based on if already liked or already disliked
    * */
   public canLike(postId: string): boolean {
-    const likes = this.getLikes();
-    const dislikes = this.getDisLikes();
-    return likes[postId] == null && dislikes[postId] == null;
+    return this.hasLike(postId) === false && this.hasDisLike(postId) === false;
   }
 
   /**
@@ -180,10 +221,12 @@ export class StorageService {
    * based on if already followed or already unfollowed
    * */
   public canFollow(userId: string): boolean {
-    const followers = this.getFollowers();
-    const unfollows = this.getUnfollowed();
-    return followers[userId] == null && unfollows[userId] == null;
+    return (
+      this.hasFollower(userId) === false && this.hasUnFollowed(userId) === false
+    );
   }
+
+  //endregion
 
   /**
    * method to get all unfollowable users at the current moment.
@@ -218,7 +261,7 @@ export class StorageService {
         new Date(likes[key] + dislikeAllowTime * 1000).getTime() <
         new Date(Date.now()).getTime()
       ) {
-        // can unfollow, time passed
+        // can dislike, time passed
         canDislike[key] = likes[key];
       }
     });
@@ -226,74 +269,118 @@ export class StorageService {
   }
 
   /**
-   * get number of the unfollowable users
-   * @returns count of the unfollowable users
-   * */
-  public getUnfollowableLength(time: number = 86400): number {
-    return Object.keys(this.getUnfollowable(time)).length;
-  }
-
-  public getDislikeableLength(time: number = 86400):number {
-    return Object.keys(this.getDislikeable(time)).length;
-  }
-
-  /**
-   * Adds a follower to the followers list
-   * */
-  public addFollower(followerId: string) {
-    const followers = this.getFollowers();
-    followers[followerId] = Date.now();
-    this.setFollowers(followers);
-  }
-
-  /**
-   * Adds a post to the liked posts list
-   * */
-  public addLike(postId: string) {
-    const likes = this.getLikes();
-    likes[postId] = Date.now();
-    this.setLikes(likes);
-  }
-
-  /**
    * Removes followed user from followers and add him to the unfollowed list
    * */
   public unFollowed(userId: string) {
-    const followers = this.getFollowers();
-    if (followers[userId]) {
-      this.addUnfollowed(userId);
-      delete followers[userId];
-    }
-    this.setFollowers(followers);
+    //remove from followers
+    this.removeFollower(userId);
+    //add to unfollowed
+    this.addUnfollowed(userId);
   }
 
   /**
    * Removes liked post from liked posts and add it to the disliked ones
    * */
   public disLiked(postId: string) {
-    const likes = this.getLikes();
-    if (likes[postId]) {
-      this.addDisLiked(postId);
-      delete likes[postId];
+    this.removeLike(postId);
+    this.addDisLiked(postId);
+  }
+
+  //region remove functions
+
+  private removeLike(postId: string) {
+    if (this.hasLike(postId) === true) {
+      //remove from likes
+      this.database
+        .set(
+          this.likesPath,
+          this.database
+            .get(this.likesPath)
+            .omit(postId)
+            .value(),
+        )
+        .write();
     }
-    this.setLikes(likes);
+    //else do nothing, like not present
+  }
+
+  private removeDisLike(postId: string) {
+    if (this.hasDisLike(postId) === true) {
+      //remove from dislikes
+      this.database
+        .set(
+          this.dislikesPath,
+          this.database
+            .get(this.dislikesPath)
+            .omit(postId)
+            .value(),
+        )
+        .write();
+    }
+    //else do nothing, dislike not present
+  }
+
+  private removeFollower(userId: string) {
+    if (this.hasFollower(userId) === true) {
+      //remove from followers
+      this.database
+        .set(
+          this.followerPath,
+          this.database
+            .get(this.followerPath)
+            .omit(userId)
+            .value(),
+        )
+        .write();
+    }
+    //else do nothing, follower not present
+  }
+
+  private removeUnfollowed(userId: string) {
+    if (this.hasUnFollowed(userId) === true) {
+      //remove from followers
+      this.database
+        .set(
+          this.unfollowsPath,
+          this.database
+            .get(this.unfollowsPath)
+            .omit(userId)
+            .value(),
+        )
+        .write();
+    }
+    //else do nothing, unfollowed not present
+  }
+
+  //endregion
+
+  //region add functions
+  /**
+   * Adds a follower to the followers list
+   * */
+  public addFollower(followerId: string) {
+    this.database.set(`${this.followerPath}.${followerId}`, Date.now()).write();
+  }
+
+  /**
+   * Adds a post to the liked posts list
+   * */
+  public addLike(postId: string) {
+    this.database.set(this.likeObject(postId), Date.now()).write();
   }
 
   /**
    * Add user to the already followed and unfollowed again list
    * */
   private addUnfollowed(userId: string) {
-    const unfollows = this.getUnfollowed();
-    unfollows[userId] = Date.now();
-    this.setUnFollows(unfollows);
+    this.database.set(this.unfollowerObject(userId), Date.now()).write();
   }
 
   /**
    * Adds post to the already liked and disliked again list
    * */
   private addDisLiked(postId: string) {
-    const dislikes = this.getDisLikes();
-    dislikes[postId] = Date.now();
-    this.setDisLikes(dislikes);
+    this.database.set(this.disLikeObject(postId), Date.now()).write();
   }
+  //endregion
 }

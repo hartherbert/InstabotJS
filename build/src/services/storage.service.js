@@ -9,6 +9,10 @@ class StorageService {
         this.unfollowsPath = 'unfollows';
         this.likesPath = 'likes';
         this.dislikesPath = 'dislikes';
+        this.followerObject = followerId => `${this.followerPath}.${followerId}`;
+        this.unfollowerObject = followerId => `${this.unfollowsPath}.${followerId}`;
+        this.likeObject = postId => `${this.likesPath}.${postId}`;
+        this.disLikeObject = dislikeId => `${this.dislikesPath}.${dislikeId}`;
         this.adapter = new FileSync('db.json', {
             defaultValue: {
                 [this.followerPath]: {},
@@ -20,82 +24,78 @@ class StorageService {
             deserialize: stringData => JSON.parse(stringData),
         });
         this.database = new low(this.adapter);
-        let followers = this.getFollowers();
-        if (followers == null) {
-            followers = {};
-        }
         this.setWaitTimeBeforeDelete(this.waitTimeBeforeDeleteData);
-        this.setFollowers(followers);
-        let likes = this.getLikes();
-        if (likes == null) {
-            likes = {};
-        }
-        this.setLikes(likes);
     }
     setWaitTimeBeforeDelete(minutes) {
         this.waitTimeBeforeDeleteData = minutes * 60;
     }
-    getFollowers() {
-        return this.database.get(this.followerPath).value();
+    hasLike(postId) {
+        return !!this.database.get(this.likeObject(postId)).value();
     }
-    getFollowersLength() {
-        return Object.keys(this.getFollowers()).length;
+    hasDisLike(postId) {
+        return !!this.database.get(this.disLikeObject(postId)).value();
     }
-    getUnfollowed() {
-        return this.database.get(this.unfollowsPath).value();
+    hasFollower(followerId) {
+        return !!this.database.get(this.followerObject(followerId)).value();
     }
-    getUnFollowsLength() {
-        return Object.keys(this.getUnfollowed()).length;
-    }
-    getLikes() {
-        return this.database.get(this.likesPath).value();
+    hasUnFollowed(followerId) {
+        return !!this.database.get(this.unfollowerObject(followerId)).value();
     }
     getLikesLength() {
         return Object.keys(this.getLikes()).length;
     }
+    getDisLikesLength() {
+        return Object.keys(this.getDisLikes()).length;
+    }
+    getFollowersLength() {
+        return Object.keys(this.getFollowers()).length;
+    }
+    getUnFollowsLength() {
+        return Object.keys(this.getUnfollowed()).length;
+    }
+    getUnfollowableLength(time = 86400) {
+        return Object.keys(this.getUnfollowable(time)).length;
+    }
+    getDislikeableLength(time = 86400) {
+        return Object.keys(this.getDislikeable(time)).length;
+    }
+    getLikes() {
+        return this.database.get(this.likesPath).value();
+    }
     getDisLikes() {
         return this.database.get(this.dislikesPath).value();
     }
-    getDisLikesLength() {
-        return Object.keys(this.getDisLikes()).length;
+    getFollowers() {
+        return this.database.get(this.followerPath).value();
+    }
+    getUnfollowed() {
+        return this.database.get(this.unfollowsPath).value();
     }
     cleanUp() {
         const unfollowed = this.getUnfollowed();
         const disliked = this.getDisLikes();
-        Object.keys(unfollowed).forEach(key => {
-            if (new Date(unfollowed[key] + this.waitTimeBeforeDeleteData * 1000).getTime() < new Date(Date.now()).getTime()) {
-                delete unfollowed[key];
+        Object.keys(unfollowed).forEach(userId => {
+            if (new Date(unfollowed[userId] + this.waitTimeBeforeDeleteData * 1000).getTime() < new Date(Date.now()).getTime()) {
+                this.removeUnfollowed(userId);
             }
         });
-        Object.keys(disliked).forEach(key => {
-            if (new Date(disliked[key] + this.waitTimeBeforeDeleteData * 1000).getTime() < new Date(Date.now()).getTime()) {
-                delete disliked[key];
+        Object.keys(disliked).forEach(postId => {
+            if (new Date(disliked[postId] + this.waitTimeBeforeDeleteData * 1000).getTime() < new Date(Date.now()).getTime()) {
+                this.removeDisLike(postId);
             }
         });
-        this.setUnFollows(unfollowed);
-        this.setDisLikes(disliked);
     }
-    setFollowers(followers) {
-        this.database.get(this.followerPath).write(followers);
-    }
-    setUnFollows(unfollows) {
-        this.database.get(this.unfollowsPath).write(unfollows);
-    }
-    setLikes(likes) {
-        this.database.get(this.likesPath).write(likes);
-    }
-    setDisLikes(dislikes) {
-        this.database.get(this.dislikesPath).write(dislikes);
+    wipeData() {
+        this.database.set(this.followerPath, {}).write();
+        this.database.set(this.unfollowsPath, {}).write();
+        this.database.set(this.likesPath, {}).write();
+        this.database.set(this.dislikesPath, {}).write();
     }
     canLike(postId) {
-        const likes = this.getLikes();
-        const dislikes = this.getDisLikes();
-        return likes[postId] == null && dislikes[postId] == null;
+        return this.hasLike(postId) === false && this.hasDisLike(postId) === false;
     }
     canFollow(userId) {
-        const followers = this.getFollowers();
-        const unfollows = this.getUnfollowed();
-        return followers[userId] == null && unfollows[userId] == null;
+        return (this.hasFollower(userId) === false && this.hasUnFollowed(userId) === false);
     }
     getUnfollowable(unfollowAllowedTime = 86400) {
         const followed = this.getFollowers();
@@ -119,47 +119,65 @@ class StorageService {
         });
         return canDislike;
     }
-    getUnfollowableLength(time = 86400) {
-        return Object.keys(this.getUnfollowable(time)).length;
-    }
-    getDislikeableLength(time = 86400) {
-        return Object.keys(this.getDislikeable(time)).length;
-    }
-    addFollower(followerId) {
-        const followers = this.getFollowers();
-        followers[followerId] = Date.now();
-        this.setFollowers(followers);
-    }
-    addLike(postId) {
-        const likes = this.getLikes();
-        likes[postId] = Date.now();
-        this.setLikes(likes);
-    }
     unFollowed(userId) {
-        const followers = this.getFollowers();
-        if (followers[userId]) {
-            this.addUnfollowed(userId);
-            delete followers[userId];
-        }
-        this.setFollowers(followers);
+        this.removeFollower(userId);
+        this.addUnfollowed(userId);
     }
     disLiked(postId) {
-        const likes = this.getLikes();
-        if (likes[postId]) {
-            this.addDisLiked(postId);
-            delete likes[postId];
+        this.removeLike(postId);
+        this.addDisLiked(postId);
+    }
+    removeLike(postId) {
+        if (this.hasLike(postId) === true) {
+            this.database
+                .set(this.likesPath, this.database
+                .get(this.likesPath)
+                .omit(postId)
+                .value())
+                .write();
         }
-        this.setLikes(likes);
+    }
+    removeDisLike(postId) {
+        if (this.hasDisLike(postId) === true) {
+            this.database
+                .set(this.dislikesPath, this.database
+                .get(this.dislikesPath)
+                .omit(postId)
+                .value())
+                .write();
+        }
+    }
+    removeFollower(userId) {
+        if (this.hasFollower(userId) === true) {
+            this.database
+                .set(this.followerPath, this.database
+                .get(this.followerPath)
+                .omit(userId)
+                .value())
+                .write();
+        }
+    }
+    removeUnfollowed(userId) {
+        if (this.hasUnFollowed(userId) === true) {
+            this.database
+                .set(this.unfollowsPath, this.database
+                .get(this.unfollowsPath)
+                .omit(userId)
+                .value())
+                .write();
+        }
+    }
+    addFollower(followerId) {
+        this.database.set(`${this.followerPath}.${followerId}`, Date.now()).write();
+    }
+    addLike(postId) {
+        this.database.set(this.likeObject(postId), Date.now()).write();
     }
     addUnfollowed(userId) {
-        const unfollows = this.getUnfollowed();
-        unfollows[userId] = Date.now();
-        this.setUnFollows(unfollows);
+        this.database.set(this.unfollowerObject(userId), Date.now()).write();
     }
     addDisLiked(postId) {
-        const dislikes = this.getDisLikes();
-        dislikes[postId] = Date.now();
-        this.setDisLikes(dislikes);
+        this.database.set(this.disLikeObject(postId), Date.now()).write();
     }
 }
 exports.StorageService = StorageService;
