@@ -1,11 +1,19 @@
 import { Response } from 'node-fetch';
-import { IResult } from '../services/http.service';
+import { IResult } from '../../models/http-result';
 
 
 export class Utils {
   public static getPostsOfHashtagGraphQL(data: object) {
     if (data && data['graphql']) {
       return data['graphql']['hashtag']['edge_hashtag_to_media']['edges'];
+    } else {
+      return [];
+    }
+  }
+
+  public static getPostGraphQL(data: object) {
+    if (data && data['graphql'] && data['graphql']['shortcode_media']) {
+      return data['graphql']['shortcode_media'];
     } else {
       return [];
     }
@@ -115,6 +123,11 @@ export class Utils {
     /*if (prefix) {
       Utils.writeLog(`Sleeping for ${ms / 1000}s`, prefix);
     }*/
+    return new Promise(resolve => setTimeout(resolve, Number(ms.toFixed(0))));
+  }
+
+  public static quickSleep() {
+    const ms = Utils.getRandomInt(3, 15);
     return new Promise(resolve => setTimeout(resolve, Number(ms.toFixed(0))));
   }
 

@@ -1,33 +1,32 @@
-import { HttpService, IResult } from '../services/http.service';
-import { Utils } from '../utils/utils';
-import { BotBehaviorConfig, BotConfig } from './config';
-import { StorageService } from '../services/storage.service';
-import { MediaPost } from './post';
-import { UserAccount } from './user-account';
+import { BotBehaviorConfig, BotConfig } from './models/config';
+import { HttpService } from './services/http.service';
+import { StorageService } from './services/storage.service';
+import { Utils } from './modules/utils/utils';
+import { MediaPost } from './models/post';
+import { UserAccount } from './models/user-account';
+import { IResult } from './models/http-result';
 
 export class Instabot {
-  private isLoggedIn: boolean = false;
+  public isLoggedIn: boolean = false;
   //region Config
   /*username of the current logged in user*/
-  username: string;
+  public username: string;
   /*password of the current logged in user*/
-  password: string;
+  public password: string;
   /*userId of the current logged in user*/
-  user_id: string;
+  public user_id: string;
 
   /*actual bot configuration*/
-  config: BotBehaviorConfig;
+  public config: BotBehaviorConfig;
   /*Default bot configuration*/
   private defaultConfig: BotBehaviorConfig = {
     maxLikesPerDay: 1000,
-    maxDislikesPerDay: 1000,
+    maxDislikesPerDay: 0,
     maxFollowsPerDay: 300,
     maxUnfollowsPerDay: 300,
     minUnfollowWaitTime: 4320, // minutes... -> 72 hours
     minDislikeWaitTime: 1440, // minutes... -> 24 hours
     maxFollowsPerHashtag: 20,
-    maxLikesToLikeMedia: 600,
-    minLikesToLikeMedia: 5,
     hashtags: ['follow4follow', 'f4f', 'beer', 'l4l', 'like4like'],
     maxLikesPerHashtag: 50,
     sleepTime: 4,
@@ -38,21 +37,26 @@ export class Instabot {
       followSelebgramUsers: false,
       followPassiveUsers: false,
     },
+    postOptions: {
+      maxLikesToLikeMedia: 600,
+      minLikesToLikeMedia: 5,
+    },
+    isTesting: false,
   };
   /*registered functions to call again after bot-sleep*/
-  registeredRoutines: {
-    [routine: string]: Function;
-  };
+  private registeredRoutines: {
+    [routine: string]: [Function, any[]];
+  } = {};
   /*How long a day goes*/
-  private readonly timeInDay: number = 24 * 60 * 60; // 24 hours
+  public readonly timeInDay: number = 24 * 60 * 60; // 24 hours
   /*Bot sleeptime in seconds (calculated in the constructor)*/
   private readonly sleepTimeInSecs: number; // bot sleeptime in secs
   /*minimum sleeptime for the bot if an failed request response comes in*/
-  private readonly failedRequestSleepTime = 120; // in seconds
+  public readonly failedRequestSleepTime = 120; // in seconds
   /*Maximum count of ban request responses*/
-  private banCountToBeBanned: number = 3;
+  public banCountToBeBanned: number = 3;
   /*Time to sleep in seconds when ban is active*/
-  private banSleepTime: number = 2 * 60 * 60;
+  public banSleepTime: number = 2 * 60 * 60;
 
   //endregion
 
@@ -74,7 +78,7 @@ export class Instabot {
   /*Count of the unfollowed users in the current running day*/
   private unfollowCountCurrentDay: number = 0;
   /*likes made in the current running day*/
-  private likesCountCurrentDay: number = 0;
+  public likesCountCurrentDay: number = 0;
   /*dislikes made in the current running day*/
   private dislikesCountCurrentDay: number = 0;
   /*if initialisation was successful*/
@@ -89,8 +93,8 @@ export class Instabot {
   //endregion
 
   constructor(
-    private apiService: HttpService,
-    private storageService: StorageService,
+    public apiService: HttpService,
+    public storageService: StorageService,
     options: BotConfig,
   ) {
     if (
@@ -139,6 +143,13 @@ export class Instabot {
     /*this.storageService.setWaitTimeBeforeDelete(
       this.config.waitTimeBeforeDelete,
     );*/
+
+    // only for testing purposes
+    if (this.config.isTesting === true) {
+      this.isLoggedIn = true;
+    }
+
+    //this.clearRoutines();
   }
 
   /**
@@ -282,6 +293,7 @@ export class Instabot {
    * logs in the current user
    * */
   private login(): Promise<boolean> {
+    if (this.isLoggedIn === true) return Promise.resolve(true);
     return new Promise((resolve, reject) => {
       Utils.writeLog('trying to login as ' + this.username + '...', 'Login');
       this.apiService
@@ -314,9 +326,7 @@ export class Instabot {
                     // logged in successfully
                     Utils.sleep().then(() => {
                       this.apiService
-                        .getUserInfo(this.username, {
-                          ...this.config.followerOptions,
-                        })
+                        .getUserInfo(this.username)
                         .then(result => {
                           // own user_id
                           this.isSuccess(result).then(success => {
@@ -382,11 +392,18 @@ export class Instabot {
    * Registers a routine function, to call again after bot-sleep
    * @param id, any name (key in the object)
    * @param routine, function to be called after sleep
+   * @param params, arguments to pass to function on call
    * */
-  private registerRoutine(id: string, routine: Function): void {
-    if (this.registeredRoutines[id] == null) {
+  private registerRoutine(
+    id: string,
+    routine: Function,
+    ...params: any[]
+  ): void {
+    console.log('registering new routine: ', id);
+    if (Object.keys(this.registeredRoutines).indexOf(id) < 0) {
       // register routine
-      this.registeredRoutines[id] = routine;
+      console.log('registered routine: ', id);
+      this.registeredRoutines[id] = [routine, params];
     }
   }
 
@@ -483,7 +500,7 @@ export class Instabot {
    * */
   public async startAutoFollow(withSleep: boolean = true) {
     try {
-      this.registerRoutine('startAutoFollow', this.startAutoFollow);
+      this.registerRoutine('startAutoFollow', this.startAutoFollow, withSleep);
 
       if (this.botIsAsleep === true) {
         return Promise.resolve();
@@ -563,7 +580,12 @@ export class Instabot {
 
       if (isAutoStarted === false) {
         // registering the routine to autostart again after bot waking up after sleep
-        this.registerRoutine('startAutoUnfollow', this.startAutoUnfollow);
+        this.registerRoutine(
+          'startAutoUnfollow',
+          this.startAutoUnfollow,
+          withSleep,
+          isAutoStarted,
+        );
       }
 
       await this.getStartRoutineSleepTime();
@@ -641,7 +663,12 @@ export class Instabot {
       }
 
       if (isAutoStarted === false) {
-        this.registerRoutine('startAutoDislike', this.startAutoDislike);
+        this.registerRoutine(
+          'startAutoDislike',
+          this.startAutoDislike,
+          withSleep,
+          isAutoStarted,
+        );
       }
 
       await this.getStartRoutineSleepTime();
@@ -712,7 +739,7 @@ export class Instabot {
    * @param result, result coming from ApiService
    * @returns Promise<boolean>
    * */
-  private async isSuccess(result: IResult<any>): Promise<boolean> {
+  public async isSuccess(result: IResult<any>): Promise<boolean> {
     if (result.success !== true) {
       // request wasnt successful
       if (result.status >= 400 && result.status <= 403) {
@@ -778,8 +805,7 @@ export class Instabot {
 
         if (
           this.storageService.canLike(post.id) !== true ||
-          post.likes < this.config.minLikesToLikeMedia ||
-          post.likes > this.config.maxLikesToLikeMedia
+          post.canLike() !== true
         ) {
           // already result media
           Utils.writeLog(`Not liking post ${post.id}`);
@@ -818,11 +844,11 @@ export class Instabot {
   /**
    * Determine the sleeptime, every 8. like will sleep a longer time than normal
    * */
-  private async startLikeSleep(withSleep: boolean = true) {
+  public async startLikeSleep(withSleep: boolean = true, factor: number = 8) {
     if (withSleep === true) {
-      if (this.likesCountCurrentDay % 8 === 0) {
+      if (this.likesCountCurrentDay % factor === 0) {
         await Utils.sleep(
-          this.getLikeSleepTime() * Utils.getRandomInt(4, 8),
+          this.getLikeSleepTime() * Utils.getRandomInt(factor / 2, factor),
           'likeAllExistingMedia',
         );
       } else {
@@ -912,9 +938,7 @@ export class Instabot {
           userId !== this.user_id &&
           this.storageService.canFollow(userId) === true
         ) {
-          const result = await this.apiService.getUserInfoById(userId, {
-            ...this.config.followerOptions,
-          });
+          const result = await this.apiService.getUserInfoById(userId);
           const success = await this.isSuccess(result);
           if (success === false) {
             await this.startFailedRequestSleep();
@@ -966,21 +990,24 @@ export class Instabot {
    * function to call when new post has been liked
    * stores postid into storageApi
    * */
-  private likedNewMedia(post: MediaPost) {
+  public likedNewMedia(post: MediaPost) {
     const index = this.userIdOfLikedPosts.findIndex(id => id === post.ownerId);
     if (index < 0) {
       // not found
       this.userIdOfLikedPosts.push(post.ownerId);
     }
-    Utils.writeLog(`Liked post ${post.id}`, 'Like');
+    Utils.writeLog(
+      `Liked new post: https://www.instagram.com/p/${post.shortcode}`,
+      'Like',
+    );
     this.likesCountCurrentDay++;
     this.storageService.addLike(post.id);
     this.updateMessage();
 
-    if (this.shouldStartDislike() === true) {
+    /*if (this.shouldStartDislike() === true) {
       // start to dislike media
       this.startAutoDislike();
-    }
+    }*/
   }
 
   /**
@@ -1045,7 +1072,7 @@ export class Instabot {
    * selects an random hashtag of the hashtag-array of the config
    * @returns hashtag as string
    * */
-  private getRandomHashtag(): string {
+  public getRandomHashtag(): string {
     return this.config.hashtags[
       Utils.getRandomInt(0, this.config.hashtags.length - 1)
     ];
@@ -1236,7 +1263,10 @@ export class Instabot {
    * function to restart all routines that were running before the bot-sleep
    * */
   private async restartRoutines() {
-    if (this.isLoggedIn === false) {
+    if (this.config.isTesting === true) {
+      // pass
+      this.isLoggedIn = true;
+    } else if (this.isLoggedIn === false) {
       await this.login();
     } else {
       Utils.writeLogError('still logged in, no need to restart routines');
@@ -1246,10 +1276,17 @@ export class Instabot {
     // restart all routines that were running
     Object.keys(this.registeredRoutines).forEach(key => {
       Utils.writeLog('Restarting routine: ' + key);
-      this.registeredRoutines[key].call(this);
+      this.registeredRoutines[key][0].call(
+        this,
+        this.registeredRoutines[key][1],
+      );
     });
 
     return Promise.resolve();
+  }
+
+  private clearRoutines() {
+    this.registeredRoutines = {};
   }
 
   /**
@@ -1264,4 +1301,18 @@ export class Instabot {
     await Utils.sleepSecs(1);
     process.exit();
   }
+
+
+  private shouldBotSleep():boolean{
+    const now = new Date();
+    const nowNumber = (now.getHours() + "" + (now.getMinutes() < 10 ? "0" : "") + now.getMinutes());
+    const shouldNumber = (this.config.sleepUntil).replace(":", "");
+    if(Number(nowNumber) >= Number(shouldNumber)){
+      console.log('should not be sleeping now' );
+    }else{
+      console.log('should be sleeping');
+    }
+
+  }
+
 }

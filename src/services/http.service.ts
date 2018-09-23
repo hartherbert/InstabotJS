@@ -1,14 +1,8 @@
-import { Utils } from '../utils/utils';
 import { UserAccount, UserAccountOptions } from '../models/user-account';
 import fetch, { Response } from 'node-fetch';
-import { convertToMediaPosts, MediaPost } from '../models/post';
-import FormData = require('form-data');
-
-export interface IResult<T> {
-  status: number;
-  success: boolean;
-  data?: T;
-}
+import { convertToMediaPost, convertToMediaPosts, MediaPost, MediaPostOptions } from '../models/post';
+import { Utils } from '../modules/utils/utils';
+import { IResult } from '../models/http-result';
 
 const EndPoints = {
   baseUrl: 'https://www.instagram.com/',
@@ -78,6 +72,8 @@ export class HttpService {
     //urlgen      : undefined //this needs to be filled in according to my RE
   };
 
+  private language: string = 'en-US;q=0.9,en;q=0.8,es;q=0.7';
+
   private baseHeader = {
     'accept-langauge': this.language,
     origin: 'https://www.instagram.com',
@@ -91,7 +87,10 @@ export class HttpService {
   /**
    * Which languages should be set on the header
    * */
-  constructor(private language: string = 'en-US;q=0.9,en;q=0.8,es;q=0.7') {}
+  constructor(public options?:{
+    followerOptions: UserAccountOptions,
+    postOptions: MediaPostOptions
+  }) {}
 
   /**
    * Get csrf token
@@ -229,15 +228,17 @@ export class HttpService {
       return Promise.reject('cannot logout if not logged in');
     }
 
-    const form = new FormData();
-    form.append('csrfmiddlewaretoken', this.csrfToken);
+    const formdata = this.getFormData({
+      csrfmiddlewaretoken: this.csrfToken
+    });
 
     let options = {
       method: 'POST',
-      body: form,
+      body: formdata,
       headers: this.combineWithBaseHeader({
         accept: '*/*',
         'accept-encoding': 'gzip, deflate, br',
+        'content-length': formdata.length,
         'content-type': 'application/x-www-form-urlencoded',
         cookie: 'ig_cb=' + this.essentialCookies.ig_cb,
         'x-csrftoken': this.csrfToken,
@@ -313,7 +314,7 @@ export class HttpService {
                 return resolve(
                   Utils.getResult(
                     response,
-                    convertToMediaPosts(Utils.getPostsOfHashtagGraphQL(json)),
+                    convertToMediaPosts(Utils.getPostsOfHashtagGraphQL(json), this.options.postOptions),
                   ),
                 );
               }
@@ -331,6 +332,46 @@ export class HttpService {
             status: 500,
             success: false,
             data: [],
+          });
+        });
+    });
+  }
+
+
+  public getMediaPostPage(shortcode: string):Promise<IResult<MediaPost>>{
+    return new Promise<IResult<MediaPost>>(resolve => {
+      fetch(EndPoints.mediaDetails(shortcode), {
+        method: 'get',
+        headers: this.getHeaders(),
+      })
+        .then((response: Response) => {
+          response
+            .json()
+            .then(json => {
+              if (json == null) {
+                return resolve(Utils.getResult(response, null));
+              } else {
+                return resolve(
+                  Utils.getResult(
+                    response,
+                    convertToMediaPost(Utils.getPostGraphQL(json)),
+                  ),
+                );
+              }
+            })
+            .catch(() => {
+              return resolve({
+                status: 500,
+                success: false,
+                data: null,
+              });
+            });
+        })
+        .catch(() => {
+          return resolve({
+            status: 500,
+            success: false,
+            data: null,
           });
         });
     });
@@ -361,8 +402,7 @@ export class HttpService {
    * @returns Promise<IResult<UserAccount>>
    * */
   public getUserInfo(
-    username: string,
-    options?: UserAccountOptions,
+    username: string
   ): Promise<IResult<UserAccount>> {
     return new Promise<IResult<UserAccount>>(resolve => {
       fetch(EndPoints.userDetails(username), {
@@ -418,7 +458,7 @@ export class HttpService {
               return resolve(
                 Utils.getResult(
                   response,
-                  UserAccount.getUserByProfileData(userData, options),
+                  UserAccount.getUserByProfileData(userData, this.options.followerOptions),
                 ),
               );
             })
@@ -449,7 +489,6 @@ export class HttpService {
    * */
   public getUserInfoById(
     userId: string,
-    options?: UserAccountOptions,
   ): Promise<IResult<UserAccount>> {
     return new Promise<IResult<UserAccount>>(resolve => {
       fetch(EndPoints.userDetailsById(userId), {
@@ -468,7 +507,7 @@ export class HttpService {
               } else {
                 // get complete userinfo by profile
                 Utils.sleep().then(() => {
-                  this.getUserInfo(json['user']['username'], options).then(
+                  this.getUserInfo(json['user']['username']).then(
                     result => {
                       return resolve(result);
                     },

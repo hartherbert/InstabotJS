@@ -1,8 +1,8 @@
-import { Instabot } from './models/bot';
 import { HttpService } from './services/http.service';
 import * as path from 'path';
 import { BotConfig } from './models/config';
 import { StorageService } from './services/storage.service';
+import { Instabot } from './lib';
 const readConfig = require('read-config');
 
 (() => {

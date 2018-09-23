@@ -1,10 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = require("../utils/utils");
 const user_account_1 = require("../models/user-account");
 const node_fetch_1 = require("node-fetch");
 const post_1 = require("../models/post");
-const FormData = require("form-data");
+const utils_1 = require("../modules/utils/utils");
 const EndPoints = {
     baseUrl: 'https://www.instagram.com/',
     feed: () => `${EndPoints.baseUrl}?__a=1`,
@@ -21,8 +20,8 @@ const EndPoints = {
     getUsersThatLikedMedia: (shortcode, first) => `${EndPoints.baseUrl}graphql/query/?query_hash=e0f59e4a1c8d78d0161873bc2ee7ec44&variables=%7B%22shortcode%22%3A%22${shortcode}%22%2C%22include_reel%22%3Afalse%2C%22first%22%3A${first}%7D`,
 };
 class HttpService {
-    constructor(language = 'en-US;q=0.9,en;q=0.8,es;q=0.7') {
-        this.language = language;
+    constructor(options) {
+        this.options = options;
         this.userAgent = utils_1.Utils.getFakeUserAgent();
         this.csrfToken = undefined;
         this.sessionId = undefined;
@@ -37,6 +36,7 @@ class HttpService {
             mcd: undefined,
             ig_cb: 1,
         };
+        this.language = 'en-US;q=0.9,en;q=0.8,es;q=0.7';
         this.baseHeader = {
             'accept-langauge': this.language,
             origin: 'https://www.instagram.com',
@@ -134,14 +134,16 @@ class HttpService {
         if (!this.csrfToken || this.csrfToken.length < 2) {
             return Promise.reject('cannot logout if not logged in');
         }
-        const form = new FormData();
-        form.append('csrfmiddlewaretoken', this.csrfToken);
+        const formdata = this.getFormData({
+            csrfmiddlewaretoken: this.csrfToken
+        });
         let options = {
             method: 'POST',
-            body: form,
+            body: formdata,
             headers: this.combineWithBaseHeader({
                 accept: '*/*',
                 'accept-encoding': 'gzip, deflate, br',
+                'content-length': formdata.length,
                 'content-type': 'application/x-www-form-urlencoded',
                 cookie: 'ig_cb=' + this.essentialCookies.ig_cb,
                 'x-csrftoken': this.csrfToken,
@@ -196,7 +198,7 @@ class HttpService {
                         return resolve(utils_1.Utils.getResult(response, []));
                     }
                     else {
-                        return resolve(utils_1.Utils.getResult(response, post_1.convertToMediaPosts(utils_1.Utils.getPostsOfHashtagGraphQL(json))));
+                        return resolve(utils_1.Utils.getResult(response, post_1.convertToMediaPosts(utils_1.Utils.getPostsOfHashtagGraphQL(json), this.options.postOptions)));
                     }
                 })
                     .catch(() => {
@@ -216,7 +218,41 @@ class HttpService {
             });
         });
     }
-    getUserInfo(username, options) {
+    getMediaPostPage(shortcode) {
+        return new Promise(resolve => {
+            node_fetch_1.default(EndPoints.mediaDetails(shortcode), {
+                method: 'get',
+                headers: this.getHeaders(),
+            })
+                .then((response) => {
+                response
+                    .json()
+                    .then(json => {
+                    if (json == null) {
+                        return resolve(utils_1.Utils.getResult(response, null));
+                    }
+                    else {
+                        return resolve(utils_1.Utils.getResult(response, post_1.convertToMediaPost(utils_1.Utils.getPostGraphQL(json))));
+                    }
+                })
+                    .catch(() => {
+                    return resolve({
+                        status: 500,
+                        success: false,
+                        data: null,
+                    });
+                });
+            })
+                .catch(() => {
+                return resolve({
+                    status: 500,
+                    success: false,
+                    data: null,
+                });
+            });
+        });
+    }
+    getUserInfo(username) {
         return new Promise(resolve => {
             node_fetch_1.default(EndPoints.userDetails(username), {
                 method: 'get',
@@ -236,7 +272,7 @@ class HttpService {
                         });
                     }
                     const userData = json['graphql']['user'];
-                    return resolve(utils_1.Utils.getResult(response, user_account_1.UserAccount.getUserByProfileData(userData, options)));
+                    return resolve(utils_1.Utils.getResult(response, user_account_1.UserAccount.getUserByProfileData(userData, this.options.followerOptions)));
                 })
                     .catch(() => {
                     return resolve({
@@ -255,7 +291,7 @@ class HttpService {
             });
         });
     }
-    getUserInfoById(userId, options) {
+    getUserInfoById(userId) {
         return new Promise(resolve => {
             node_fetch_1.default(EndPoints.userDetailsById(userId), {
                 method: 'get',
@@ -273,7 +309,7 @@ class HttpService {
                     }
                     else {
                         utils_1.Utils.sleep().then(() => {
-                            this.getUserInfo(json['user']['username'], options).then(result => {
+                            this.getUserInfo(json['user']['username']).then(result => {
                                 return resolve(result);
                             });
                         });
