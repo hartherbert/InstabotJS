@@ -39,6 +39,7 @@
   },
   "scripts": {
     "serve":"node build/src/main.js",
+    "release":"npm run copy-release-assets & npm run build",
     "clean": "rimraf coverage build tmp",
     "build": "tsc -p tsconfig.release.json",
     "watch": "npm run copy-static-assets & tsc -w -p tsconfig.release.json",
@@ -48,6 +49,7 @@
     "test": "npm run test-only",
     "test-only": "jest --coverage",
     "test:watch": "jest --watch",
-    "copy-static-assets": "ts-node copyStaticAssets.ts"
+    "copy-static-assets": "ts-node copyStaticAssets.ts",
+    "copy-release-assets": "ts-node copyForRelease.ts"
   }
 }

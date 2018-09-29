@@ -9,9 +9,6 @@ const readConfig = require('read-config');
 
   const bot = new Instabot(config);
 
-
-  //bot.shouldBotSleep(new Date(2000, 5, 4, 23, 59));
-
   bot
     .initBot()
     .then(()=>{
