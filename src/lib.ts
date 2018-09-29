@@ -7,10 +7,8 @@ import { UserAccount } from './models/user-account';
 import { IResult } from './models/http-result';
 
 export class Instabot {
-
   public apiService: HttpService;
   public storageService: StorageService;
-
 
   //region Config
   /*username of the current logged in user*/
@@ -79,9 +77,7 @@ export class Instabot {
 
   //endregion
 
-  constructor(
-    options: BotConfig,
-  ) {
+  constructor(options: BotConfig) {
     if (
       options == null ||
       options['username'] == null ||
@@ -102,25 +98,25 @@ export class Instabot {
       ...options.config,
     };
 
-
     // only for testing purposes
     if (this.config.isTesting === true) {
       this.isLoggedIn = true;
     }
 
-
-
-    this.apiService = new HttpService({followerOptions: this.config.followerOptions, postOptions: this.config.postOptions});
+    this.apiService = new HttpService({
+      followerOptions: this.config.followerOptions,
+      postOptions: this.config.postOptions,
+    });
     this.storageService = new StorageService({
       waitTimeBeforeDeleteData: this.config.waitTimeBeforeDelete,
-      unfollowWaitTime: this.config.minUnfollowWaitTime
+      unfollowWaitTime: this.config.minUnfollowWaitTime,
     });
 
-    Utils.writeLog('----------------------- INSTABOT JS -----------------------', 'START');
+    Utils.writeLog(
+      '----------------------- INSTABOT JS -----------------------',
+      'START',
+    );
     Utils.writeLog('Started the bot');
-
-
-
   }
 
   /**
@@ -171,18 +167,16 @@ export class Instabot {
     }
   }
 
-
-  public async startSelectedMode(){
+  public async startSelectedMode() {
     const strategies = require('./modules/modes/strategies');
     const modes = this.config.botModes.split(',');
 
-    await modes.forEach((modeName)=>{
+    await modes.forEach(modeName => {
       const mode = strategies[modeName.trim()];
 
-      if(mode == null){
+      if (mode == null) {
         Utils.writeLog(`startSelectedMode: mode ${modeName} does not exist`);
-      }
-      else{
+      } else {
         //start mode
         new mode(this).start();
       }
@@ -258,7 +252,6 @@ export class Instabot {
       this.dislikesCountCurrentDay,
     );
   }
-
 
   /**
    * logs in the current user
@@ -359,7 +352,6 @@ export class Instabot {
     });
   }
 
-
   /**
    * Puts the bot into an bansleep mode
    * */
@@ -368,7 +360,8 @@ export class Instabot {
       Utils.writeLog(
         'Bot is probably getting banned, sleeping now for ' +
           this.banSleepTime / 3600 +
-          'h', 'Ban'
+          'h',
+        'Ban',
       );
       this.isBanned = true;
       this.banCount = 0;
@@ -514,7 +507,6 @@ export class Instabot {
   }
 
   public shouldBotSleep(now: Date): boolean {
-
     const { nowHour, nowMinutes } = {
       nowHour: Number(now.getHours()),
       nowMinutes: Number(now.getMinutes()),
@@ -529,15 +521,13 @@ export class Instabot {
       endMinutes: Number(this.config.sleepEnd.split(':')[1]),
     };
 
-    const shouldBotSleep = (
+    const shouldBotSleep =
       nowHour >= startHour &&
-      nowHour * 60 + nowMinutes >=
-      startHour * 60 + startMinutes &&
+      nowHour * 60 + nowMinutes >= startHour * 60 + startMinutes &&
       nowHour <= endHour &&
-      nowHour*60 + nowMinutes <= endHour * 60 + endMinutes
-    );
+      nowHour * 60 + nowMinutes <= endHour * 60 + endMinutes;
 
-    if(shouldBotSleep === true){
+    if (shouldBotSleep === true) {
       // start new day bcs all functions are in the sleep mode
       this.startNewDay();
     }
