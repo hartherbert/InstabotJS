@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "lowdb": "^1.0.0",
-    "moment": "^2.22.2",
     "node-fetch": "^2.2.0",
     "read-config": "^2.0.0",
     "tslib": "~1.9.3"
@@ -38,8 +37,8 @@
     "typescript": "~3.0.1"
   },
   "scripts": {
-    "serve":"node build/src/main.js",
-    "release":"npm run copy-release-assets & npm run build",
+    "serve": "node build/src/main.js",
+    "release": "npm run copy-release-assets & npm run build",
     "clean": "rimraf coverage build tmp",
     "build": "tsc -p tsconfig.release.json",
     "watch": "npm run copy-static-assets & tsc -w -p tsconfig.release.json",
