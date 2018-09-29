@@ -30,5 +30,4 @@ coverage
 
 # Ignore original config
 src/bot-config.json
-package-lock.json
 build/log.txt
