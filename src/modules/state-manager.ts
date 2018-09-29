@@ -1,4 +1,4 @@
-import EventEmitter = NodeJS.EventEmitter;
+import {EventEmitter} from 'events';
 
 export enum State {
   OK= 'ok',
@@ -27,6 +27,7 @@ export enum StateEvents {
 export class StateManager extends EventEmitter {
 
   private _status: State;
+  public stateName: string; // only used to log
 
   constructor() {
     super();

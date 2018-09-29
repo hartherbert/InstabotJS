@@ -1,6 +1,11 @@
 import { UserAccount, UserAccountOptions } from '../models/user-account';
 import fetch, { Response } from 'node-fetch';
-import { convertToMediaPost, convertToMediaPosts, MediaPost, MediaPostOptions } from '../models/post';
+import {
+  convertToMediaPost,
+  convertToMediaPosts,
+  MediaPost,
+  MediaPostOptions,
+} from '../models/post';
 import { Utils } from '../modules/utils/utils';
 import { IResult } from '../models/http-result';
 
@@ -87,10 +92,27 @@ export class HttpService {
   /**
    * Which languages should be set on the header
    * */
-  constructor(public options?:{
-    followerOptions: UserAccountOptions,
-    postOptions: MediaPostOptions
-  }) {}
+  constructor(
+    public options?: {
+      followerOptions: UserAccountOptions;
+      postOptions: MediaPostOptions;
+    },
+  ) {
+    if (!options) {
+      this.options = {
+        followerOptions: {
+          unwantedUsernames: [],
+          followFakeUsers: false,
+          followSelebgramUsers: false,
+          followPassiveUsers: false,
+        },
+        postOptions: {
+          maxLikesToLikeMedia: 600,
+          minLikesToLikeMedia: 5,
+        },
+      };
+    }
+  }
 
   /**
    * Get csrf token
@@ -157,7 +179,7 @@ export class HttpService {
 
     const formdata = this.getFormData({
       username: credentials.username,
-      password: credentials.password
+      password: credentials.password,
     });
 
     let options = {
@@ -196,7 +218,9 @@ export class HttpService {
                   Utils.getResult(response, this.essentialCookies.sessionid),
                 );
               } else {
-                return reject('Authentication failed... Is your username and your password right?');
+                return reject(
+                  'Authentication failed... Is your username and your password right?',
+                );
               }
             })
             .catch(() => {
@@ -229,7 +253,7 @@ export class HttpService {
     }
 
     const formdata = this.getFormData({
-      csrfmiddlewaretoken: this.csrfToken
+      csrfmiddlewaretoken: this.csrfToken,
     });
 
     let options = {
@@ -314,7 +338,10 @@ export class HttpService {
                 return resolve(
                   Utils.getResult(
                     response,
-                    convertToMediaPosts(Utils.getPostsOfHashtagGraphQL(json), this.options.postOptions),
+                    convertToMediaPosts(
+                      Utils.getPostsOfHashtagGraphQL(json),
+                      this.options.postOptions,
+                    ),
                   ),
                 );
               }
@@ -337,8 +364,15 @@ export class HttpService {
     });
   }
 
+  public getMediaPostPage(shortcode: string): Promise<IResult<MediaPost>> {
+    if(typeof shortcode !== 'string' || shortcode.length < 1){
+      return Promise.resolve({
+        status: 500,
+        success: false,
+        data: null,
+      });
+    }
 
-  public getMediaPostPage(shortcode: string):Promise<IResult<MediaPost>>{
     return new Promise<IResult<MediaPost>>(resolve => {
       fetch(EndPoints.mediaDetails(shortcode), {
         method: 'get',
@@ -359,7 +393,8 @@ export class HttpService {
                 );
               }
             })
-            .catch(() => {
+            .catch(err => {
+              console.error('JSON ERROR', err);
               return resolve({
                 status: 500,
                 success: false,
@@ -367,7 +402,8 @@ export class HttpService {
               });
             });
         })
-        .catch(() => {
+        .catch(err => {
+          console.error('RESPONSE ERROR', err);
           return resolve({
             status: 500,
             success: false,
@@ -401,9 +437,7 @@ export class HttpService {
    * @param options
    * @returns Promise<IResult<UserAccount>>
    * */
-  public getUserInfo(
-    username: string
-  ): Promise<IResult<UserAccount>> {
+  public getUserInfo(username: string): Promise<IResult<UserAccount>> {
     return new Promise<IResult<UserAccount>>(resolve => {
       fetch(EndPoints.userDetails(username), {
         method: 'get',
@@ -458,11 +492,15 @@ export class HttpService {
               return resolve(
                 Utils.getResult(
                   response,
-                  UserAccount.getUserByProfileData(userData, this.options.followerOptions),
+                  UserAccount.getUserByProfileData(
+                    userData,
+                    this.options.followerOptions,
+                  ),
                 ),
               );
             })
-            .catch(() => {
+            .catch(err => {
+              console.error('json error', err);
               return resolve({
                 status: 500,
                 success: false,
@@ -470,7 +508,8 @@ export class HttpService {
               });
             });
         })
-        .catch(() => {
+        .catch(err => {
+          console.error('request failed', err);
           return resolve({
             status: 500,
             success: false,
@@ -487,9 +526,7 @@ export class HttpService {
    * @param options
    * @returns Promise<IResult<UserAccount>>
    * */
-  public getUserInfoById(
-    userId: string,
-  ): Promise<IResult<UserAccount>> {
+  public getUserInfoById(userId: string): Promise<IResult<UserAccount>> {
     return new Promise<IResult<UserAccount>>(resolve => {
       fetch(EndPoints.userDetailsById(userId), {
         method: 'get',
@@ -506,12 +543,10 @@ export class HttpService {
                 return resolve(Utils.getResult(response, null));
               } else {
                 // get complete userinfo by profile
-                Utils.sleep().then(() => {
-                  this.getUserInfo(json['user']['username']).then(
-                    result => {
-                      return resolve(result);
-                    },
-                  );
+                Utils.quickSleep().then(() => {
+                  this.getUserInfo(json['user']['username']).then(result => {
+                    return resolve(result);
+                  });
                 });
               }
             })

@@ -3,8 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const FileSync = require('lowdb/adapters/FileSync');
 const low = require('lowdb');
 class StorageService {
-    constructor(waitTimeBeforeDeleteData = 10080) {
-        this.waitTimeBeforeDeleteData = waitTimeBeforeDeleteData;
+    constructor(options) {
         this.followerPath = 'followers';
         this.unfollowsPath = 'unfollows';
         this.likesPath = 'likes';
@@ -24,10 +23,14 @@ class StorageService {
             deserialize: stringData => JSON.parse(stringData),
         });
         this.database = new low(this.adapter);
-        this.setWaitTimeBeforeDelete(this.waitTimeBeforeDeleteData);
-    }
-    setWaitTimeBeforeDelete(minutes) {
-        this.waitTimeBeforeDeleteData = minutes * 60;
+        if (!options) {
+            options = {
+                waitTimeBeforeDeleteData: 10080,
+                unfollowWaitTime: 4320
+            };
+        }
+        this.waitTimeBeforeDeleteData = (options.waitTimeBeforeDeleteData > 0) ? options.waitTimeBeforeDeleteData * 60 : 10080 * 60;
+        this.unfollowWaitTime = (options.unfollowWaitTime > 0) ? options.unfollowWaitTime * 60 : 4320 * 60;
     }
     hasLike(postId) {
         return !!this.database.get(this.likeObject(postId)).value();
@@ -53,7 +56,7 @@ class StorageService {
     getUnFollowsLength() {
         return Object.keys(this.getUnfollowed()).length;
     }
-    getUnfollowableLength(time = 86400) {
+    getUnfollowableLength(time = this.unfollowWaitTime) {
         return Object.keys(this.getUnfollowable(time)).length;
     }
     getDislikeableLength(time = 86400) {
@@ -97,7 +100,7 @@ class StorageService {
     canFollow(userId) {
         return (this.hasFollower(userId) === false && this.hasUnFollowed(userId) === false);
     }
-    getUnfollowable(unfollowAllowedTime = 86400) {
+    getUnfollowable(unfollowAllowedTime = this.unfollowWaitTime) {
         const followed = this.getFollowers();
         const canUnfollow = {};
         Object.keys(followed).forEach(key => {
@@ -181,4 +184,3 @@ class StorageService {
     }
 }
 exports.StorageService = StorageService;
-//# sourceMappingURL=storage.service.js.map

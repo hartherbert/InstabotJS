@@ -2,7 +2,7 @@ import * as sinon from 'sinon';
 import * as chai from 'chai';
 import { StorageService } from '../src/services/storage.service';
 import { HttpService } from '../src/services/http.service';
-import { Instabot } from '../src/models/lib';
+import { Instabot } from '../src/lib';
 
 const expect = chai.expect;
 const storageService = new StorageService();
@@ -51,6 +51,13 @@ describe('Instabot', () => {
       expect(bot['dislikesCountCurrentDay']).to.be.equal(expectedVals[3]);
     });
   });
+
+
+  describe('#',()=>{
+    it('should be inside ', ()=>{
+      expect(bot['shouldBotSleep']).to.be.true;
+    })
+  })
 
   describe('#registerRoutine()', () => {
     it('should register a given routine', () => {

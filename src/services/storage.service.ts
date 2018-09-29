@@ -41,18 +41,25 @@ export class StorageService {
 
   private database;
 
-  constructor(
-    private waitTimeBeforeDeleteData: number = 10080 /*in minutes - ...one week to delete data*/,
-  ) {
-    this.database = new low(this.adapter);
-    this.setWaitTimeBeforeDelete(this.waitTimeBeforeDeleteData);
-  }
+  private waitTimeBeforeDeleteData: number;
+  private unfollowWaitTime: number;
 
-  /**
-   * method to set the wait-time before outdated data gets deleted
-   * */
-  private setWaitTimeBeforeDelete(minutes: number) {
-    this.waitTimeBeforeDeleteData = minutes * 60;
+  constructor(options?:{
+    waitTimeBeforeDeleteData: number, // in minutes
+    unfollowWaitTime: number // in minutes
+  }) {
+    this.database = new low(this.adapter);
+
+    if(!options){
+      options = {
+        waitTimeBeforeDeleteData: 10080,
+        unfollowWaitTime: 4320
+      };
+    }
+
+    this.waitTimeBeforeDeleteData = (options.waitTimeBeforeDeleteData > 0)?options.waitTimeBeforeDeleteData * 60 : 10080 * 60;
+    this.unfollowWaitTime = (options.unfollowWaitTime > 0)?options.unfollowWaitTime * 60 : 4320 * 60;
+
   }
 
   //region has functions
@@ -119,7 +126,7 @@ export class StorageService {
    * get number of the unfollowable users
    * @returns count of the unfollowable users
    * */
-  public getUnfollowableLength(time: number = 86400): number {
+  public getUnfollowableLength(time: number = this.unfollowWaitTime): number {
     return Object.keys(this.getUnfollowable(time)).length;
   }
 
@@ -233,7 +240,7 @@ export class StorageService {
    * @param unfollowAllowedTime, minimum seconds that passed by to declare user to be unfollowable
    * @retuns object containing all users that can be unfollowed at the moment
    * */
-  public getUnfollowable(unfollowAllowedTime: number = 86400): UserMap {
+  public getUnfollowable(unfollowAllowedTime: number = this.unfollowWaitTime): UserMap {
     const followed = this.getFollowers();
     const canUnfollow = {};
     Object.keys(followed).forEach(key => {

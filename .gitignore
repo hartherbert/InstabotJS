@@ -27,3 +27,6 @@ coverage
 
 # Misc
 .DS_Store
+
+# Ignore original config
+src/bot-config.json

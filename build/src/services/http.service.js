@@ -44,6 +44,20 @@ class HttpService {
             'upgrade-insecure-requests': '1',
             'user-agent': this.userAgent,
         };
+        if (!options) {
+            this.options = {
+                followerOptions: {
+                    unwantedUsernames: [],
+                    followFakeUsers: false,
+                    followSelebgramUsers: false,
+                    followPassiveUsers: false,
+                },
+                postOptions: {
+                    maxLikesToLikeMedia: 600,
+                    minLikesToLikeMedia: 5,
+                },
+            };
+        }
     }
     getCsrfToken() {
         return new Promise((resolve, reject) => {
@@ -87,7 +101,7 @@ class HttpService {
     login(credentials) {
         const formdata = this.getFormData({
             username: credentials.username,
-            password: credentials.password
+            password: credentials.password,
         });
         let options = {
             method: 'POST',
@@ -135,7 +149,7 @@ class HttpService {
             return Promise.reject('cannot logout if not logged in');
         }
         const formdata = this.getFormData({
-            csrfmiddlewaretoken: this.csrfToken
+            csrfmiddlewaretoken: this.csrfToken,
         });
         let options = {
             method: 'POST',
@@ -219,6 +233,13 @@ class HttpService {
         });
     }
     getMediaPostPage(shortcode) {
+        if (typeof shortcode !== 'string' || shortcode.length < 1) {
+            return Promise.resolve({
+                status: 500,
+                success: false,
+                data: null,
+            });
+        }
         return new Promise(resolve => {
             node_fetch_1.default(EndPoints.mediaDetails(shortcode), {
                 method: 'get',
@@ -235,7 +256,8 @@ class HttpService {
                         return resolve(utils_1.Utils.getResult(response, post_1.convertToMediaPost(utils_1.Utils.getPostGraphQL(json))));
                     }
                 })
-                    .catch(() => {
+                    .catch(err => {
+                    console.error('JSON ERROR', err);
                     return resolve({
                         status: 500,
                         success: false,
@@ -243,7 +265,8 @@ class HttpService {
                     });
                 });
             })
-                .catch(() => {
+                .catch(err => {
+                console.error('RESPONSE ERROR', err);
                 return resolve({
                     status: 500,
                     success: false,
@@ -274,7 +297,8 @@ class HttpService {
                     const userData = json['graphql']['user'];
                     return resolve(utils_1.Utils.getResult(response, user_account_1.UserAccount.getUserByProfileData(userData, this.options.followerOptions)));
                 })
-                    .catch(() => {
+                    .catch(err => {
+                    console.error('json error', err);
                     return resolve({
                         status: 500,
                         success: false,
@@ -282,7 +306,8 @@ class HttpService {
                     });
                 });
             })
-                .catch(() => {
+                .catch(err => {
+                console.error('request failed', err);
                 return resolve({
                     status: 500,
                     success: false,
@@ -308,7 +333,7 @@ class HttpService {
                         return resolve(utils_1.Utils.getResult(response, null));
                     }
                     else {
-                        utils_1.Utils.sleep().then(() => {
+                        utils_1.Utils.quickSleep().then(() => {
                             this.getUserInfo(json['user']['username']).then(result => {
                                 return resolve(result);
                             });
@@ -408,4 +433,3 @@ class HttpService {
     }
 }
 exports.HttpService = HttpService;
-//# sourceMappingURL=http.service.js.map

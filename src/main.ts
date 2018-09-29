@@ -1,7 +1,5 @@
-import { HttpService } from './services/http.service';
 import * as path from 'path';
 import { BotConfig } from './models/config';
-import { StorageService } from './services/storage.service';
 import { Instabot } from './lib';
 const readConfig = require('read-config');
 
@@ -9,20 +7,17 @@ const readConfig = require('read-config');
   const configPath = path.join(__dirname, 'bot-config.json');
   const config: BotConfig = readConfig(configPath);
 
-  const httpService: HttpService = new HttpService();
-  const storageService: StorageService = new StorageService();
-  const bot = new Instabot(httpService, storageService, config);
+  const bot = new Instabot(config);
+
+
+  //bot.shouldBotSleep(new Date(2000, 5, 4, 23, 59));
 
   bot
     .initBot()
-    .then(() => {
-      // add mode here
-      // startAutoLikeByTagMode runs till max values are reached for the day,
-      // restarts automatically bcs function has been registered
-      bot.startAutoLikeByTagMode();
-      bot.startAutoFollow();
+    .then(()=>{
+
     })
     .catch(err => {
-      console.log(err);
+      console.error('BOT INIT FAILED', err);
     });
 })(); // self calling function

@@ -1,8 +1,15 @@
 import { Response } from 'node-fetch';
 import { IResult } from '../../models/http-result';
+import * as path from 'path';
+import * as fs from 'fs';
 
 
 export class Utils {
+
+  private static readonly LOG_FILE_PATH = '../../../log.txt';
+
+  private static writeStream = fs.createWriteStream(path.resolve(__dirname, Utils.LOG_FILE_PATH), {flags: 'a'});
+
   public static getPostsOfHashtagGraphQL(data: object) {
     if (data && data['graphql']) {
       return data['graphql']['hashtag']['edge_hashtag_to_media']['edges'];
@@ -48,7 +55,7 @@ export class Utils {
    * @returns a number between 67secs - 34secs (67000 - 34000)
    */
   public static getDefaultRandom() {
-    return Utils.getRandomInt(67, 34) * 1000;
+    return Utils.getRandomInt(34, 67) * 1000;
   }
 
   public static getDateString(time: Date): string {
@@ -82,11 +89,12 @@ export class Utils {
     if (!prefix) {
       prefix = 'Log';
     }
-    console.log(
-      Utils.getTimeString(new Date(Date.now())) + ' -> ' + prefix,
-      ':',
-      message,
-    );
+
+    const logMessage = `${Utils.getTimeString(new Date(Date.now()))} -> ${prefix}: ${message.toString()}`;
+    console.log(logMessage);
+
+
+    Utils.writeStream.write(logMessage+ '\r\n');
   }
 
   public static writeProgress(message: string) {
@@ -127,7 +135,7 @@ export class Utils {
   }
 
   public static quickSleep() {
-    const ms = Utils.getRandomInt(3, 15);
+    const ms = Utils.getRandomInt(6, 17);
     return new Promise(resolve => setTimeout(resolve, Number(ms.toFixed(0))));
   }
 

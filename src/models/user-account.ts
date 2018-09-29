@@ -27,6 +27,11 @@ export interface UserAccountOptions {
    * determined by (count of medias per (follower and followings)
    * */
   followPassiveUsers?: boolean;
+
+  /**
+   * unfollowOnlyWhenFollowingMe, only let bot unfollow user if user is following user
+   * */
+  unfollowOnlyWhenFollowingMe?: boolean;
 }
 
 export class UserAccount {
@@ -222,6 +227,10 @@ export class UserAccount {
       this.isActive === true &&
       this.hasUnwantedUsername !== true
     );
+  }
+
+  public get canBeUnfollowed(): boolean {
+    return (this.isFollowedByMe === true && (this.options.unfollowOnlyWhenFollowingMe===true?this.isFollowingMe:true));
   }
 
   public canFollowReason() {

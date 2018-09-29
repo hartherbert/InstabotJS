@@ -40,13 +40,15 @@ export class MediaPost implements IMediaPost {
   constructor(mediaPostData: IMediaPost, options?: MediaPostOptions) {
     if (mediaPostData && Object.keys(mediaPostData).length > 0) {
       Object.keys(mediaPostData).forEach(key => {
-        if (Object.keys(this).indexOf(key) > 0) {
+        this[key] = mediaPostData[key];
+        /*if (Object.keys(this).indexOf(key) > 0) {
           // key exists
           this[key] = mediaPostData[key];
-        }
+        }*/
       });
     }
     this.options = {
+      ...this.options,
       ...options
     };
   }
@@ -64,6 +66,7 @@ export const convertToMediaPosts = (
   mediaArray: any[],
   options?: MediaPostOptions,
 ): MediaPost[] => {
+
   const posts: MediaPost[] = [];
   mediaArray.forEach(media => {
     const node = media['node'];
@@ -85,6 +88,7 @@ export const convertToMediaPosts = (
       ),
     );
   });
+
   return posts;
 };
 

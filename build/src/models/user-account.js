@@ -141,6 +141,9 @@ class UserAccount {
             this.isActive === true &&
             this.hasUnwantedUsername !== true);
     }
+    get canBeUnfollowed() {
+        return (this.isFollowedByMe === true && (this.options.unfollowOnlyWhenFollowingMe === true ? this.isFollowingMe : true));
+    }
     canFollowReason() {
         if (this.canBeFollowed === true) {
             return `${this.username} can be followed`;
@@ -170,4 +173,3 @@ class UserAccount {
     }
 }
 exports.UserAccount = UserAccount;
-//# sourceMappingURL=user-account.js.map

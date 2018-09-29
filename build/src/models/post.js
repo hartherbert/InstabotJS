@@ -9,12 +9,10 @@ class MediaPost {
         this.likedByUser = false;
         if (mediaPostData && Object.keys(mediaPostData).length > 0) {
             Object.keys(mediaPostData).forEach(key => {
-                if (Object.keys(this).indexOf(key) > 0) {
-                    this[key] = mediaPostData[key];
-                }
+                this[key] = mediaPostData[key];
             });
         }
-        this.options = Object.assign({}, options);
+        this.options = Object.assign({}, this.options, options);
     }
     canLike() {
         return (this.likes < this.options.maxLikesToLikeMedia &&
@@ -60,4 +58,3 @@ exports.convertToMediaPost = (mediaData, options) => {
         return null;
     }
 };
-//# sourceMappingURL=post.js.map

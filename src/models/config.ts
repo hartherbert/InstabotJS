@@ -15,13 +15,23 @@ export interface BotBehaviorConfig {
   hashtags?: string[];
 
   /**
-   * sleepTime, how many hours the bot should sleep within 24 hours
-   * @param time in hours
+   * sleepStart, time to send the bot to sleep
+   * only in this format 'hh:mm' or 'h:mm'
    * */
-  sleepTime?: number;
+  sleepStart?: string; // '00:00'
 
+  /**
+   * sleepEnd, time to wake the bot up again
+   * only in this format 'hh:mm' or 'h:mm'
+   * */
+  sleepEnd?: string; // '7:00'
 
-  sleepUntil?: string; // '7:00'
+  /**
+   * botModes, list of names of modes to start
+   * format, 'routine1, routine2, routine3, ...'
+   * {@link strategies} routines are listed there
+   * */
+  botModes: string;
 
 
   /*Like-Config*/
