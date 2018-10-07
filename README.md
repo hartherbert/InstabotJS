@@ -19,118 +19,67 @@ What's included:
 * [NPM scripts for common operations](#available-scripts),
 * .editorconfig for consistent file format.
 
-## Config
-These configuration setting should be set inside the src [bot-config.json](/src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](/build/src/bot-config.json) in the `build/src` directory.
-```typescript
-interface BotBehaviorConfig {
-/**
-   * hashtags, list of hashtags the bot should search for, without '#' prefix
-   * */
-  hashtags: string[];
-
-  /**
-   * sleepTime, how many hours the bot should sleep within 24 hours
-   * */
-  sleepTime: number;
-
-  /*Like-Config*/
-  /**
-   * maxLikesPerHashtag, maximum likes the bot is allowed to make per hashtag per 24 hours
-   * when the limit is reached, the bot takes another hashtag
-   * */
-  maxLikesPerHashtag: number;
-
-  /**
-   * maxLikesToLikeMedia, maximum likes a post is allowed to have to be liked by the bot
-   * */
-  maxLikesToLikeMedia: number;
-
-  /**
-   * minLikesToLikeMedia, minimum likes a post is allowed to have to be liked by the bot
-   * */
-  minLikesToLikeMedia: number;
-
-  /**
-   * maxLikesPerDay, maximum likes the bot is allowed to make per 24 hours
-   * */
-  maxLikesPerDay: number;
-
-  /**
-   * maxDislikesPerDay, maximum dislikes per 24 hours
-   * */
-  maxDislikesPerDay: number;
-  
-  /**
-   * minDislikeWaitTime, minimum time to wait to dislike a mediapost the bot liked before
-   * @param time in minutes
-   * */
-  minDislikeWaitTime: number;
-
-  /*Follow-Config*/
-  /**
-   * maxFollowsPerDay, max people to follow in 24 hours
-   * */
-  maxFollowsPerDay: number;
-
-  /**
-   * maxUnfollowsPerDay, max people to unfollow in 24 hours
-   * */
-  maxUnfollowsPerDay: number;
-
-  /**
-   * minUnfollowWaitTime, minimum time to wait to unfollow a user the bot followed before
-   * time in minutes
-   * */
-  minUnfollowWaitTime: number;
-
-  /**
-   * maxFollowsPerHashtag, maximum follows the bot is allowed to make per hashtag per 24 hours
-   * when the limit is reached, the bot takes another hashtag
-   * (only used by sinlge follow mode)
-   * */
-  maxFollowsPerHashtag: number;
-  
-  /**
-   * waitTimeBeforeDelete, minutes to wait before delete stored data (only unfollowed and disliked images)
-   * this option is only available to prevent an enormous data stored as json
-   * @param time in minutes
-   * */
-  waitTimeBeforeDelete: number;
-
-  /**
-   * followerOptions, options that determine if bot should follow a specific user
-   * */
-  followerOptions: {
-    /**
-     * unwantedUsernames, list of strings containing full or parts of usernames that are not wanted to be followed
-     * the bot skips them
-     * */
-    unwantedUsernames?: string[];
-
-    /**
-     * followFakeUsers, if bot should follow users that the bot thinks are fake users
-     * determined by (following/followers)
-     * */
-    followFakeUsers?: boolean;
-
-    /**
-     * followSelebgramUsers, if bot should follow users that the bot thinks are selebgram users
-     * determined by (followers/following)
-     * */
-    followSelebgramUsers?: boolean;
-
-    /**
-     * followPassiveUsers, if bot should follow users that the bot thinks are passive (inactive) users
-     * determined by (count of medias per (follower and followings)
-     * */
-    followPassiveUsers?: boolean;
-  }
-}
-```
 
 ## Quick start
 
-This project is intended to be used with v8 (LTS Carbon) release of [Node.js][nodejs] or newer and [NPM][npm]. Make sure you have those installed. Then just type following commands:
+Just watch the Youtube video
+
+[![How to setup an Instagram-bot for free](http://img.youtube.com/vi/t_D6MTjTbls/0.jpg)](http://www.youtube.com/watch?v=t_D6MTjTbls)
+
+
+## Config
+These configuration setting should be set inside the src [bot-config.json](/src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](/build/src/bot-config.json) in the `build/src` directory.
+
++ hashtags
+> hashtags, list of hashtags the bot should search for, without '#' prefix
++ sleepStart
+> sleepStart, time to send the bot to sleep only in this format 'hh:mm' or 'h:mm'
++ sleepEnd
+> sleepEnd, time to wake the bot up again only in this format 'hh:mm' or 'h:mm'
++ botModes
+> botModes, list of names of modes to start, format: 'routine1, routine2, routine3, ...'
+available botModes, see **strategies**
++ maxLikesPerHashtag
+> maxLikesPerHashtag, maximum likes the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag
++ maxLikesPerDay
+> maxLikesPerDay, maximum likes the bot is allowed to make per 24 hours
++ maxDislikesPerDay
+> maxDislikesPerDay, maximum dislikes per 24 hours
++ minDislikeWaitTime
+> minDislikeWaitTime, minimum time to wait to dislike a mediapost the bot liked before
+(time in minutes)
++ maxFollowsPerDay
+> maxFollowsPerDay, max people to follow in 24 hours
++ maxUnfollowsPerDay
+> maxUnfollowsPerDay, max people to unfollow in 24 hours
++ minUnfollowWaitTime
+> minUnfollowWaitTime, minimum time to wait to unfollow a user the bot followed before
+(time in minutes)
++ maxFollowsPerHashtag
+> maxFollowsPerHashtag, maximum follows the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag (only used by sinlge follow mode)
++ followerOptions
+>followerOptions, options that determine if bot should follow a specific user
+  + unwantedUsernames
+  > unwantedUsernames, list of strings containing full or parts of usernames that are not wanted to be followed
+  + followFakeUsers
+  > followFakeUsers, if bot should follow users that the bot thinks are fake users
+  + followSelebgramUsers
+  > followSelebgramUsers, if bot should follow users that the bot thinks are selebgram users
+  + followPassiveUsers
+  > followPassiveUsers, if bot should follow users that the bot thinks are passive (inactive) users
+  + unfollowOnlyWhenFollowingMe
+  > unfollowOnlyWhenFollowingMe, only let bot unfollow user if user is following user
++ postOptions
+> postOptions, options that determine if bot should like an specific post
+  + maxLikesToLikeMedia
+  > maxLikesToLikeMedia, maximum likes a post is allowed to have to be liked by the bot
+  + minLikesToLikeMedia
+  > minLikesToLikeMedia, minimum likes a post is allowed to have to be liked by the bot
++ waitTimeBeforeDelete
+> waitTimeBeforeDelete, minutes to wait before delete stored data (only unfollowed and disliked images) this option is only available to prevent an enormous data stored as json
+(time in minutes)
++ isTesting
+> isTesting, used only to let bot be checkable by automated tests
 
 ## Bot config
 
@@ -233,3 +182,4 @@ Want to say thank you? Help me out  [![Donate][donate-badge]][donate]
 [flow-boilerplate]: https://github.com/jsynowiec/node-flowtype-boilerplate
 [wiki-js-tests]: https://github.com/hobbydevs/InstabotJS/wiki/Unit-tests-in-plain-JavaScript
 [prettier]: https://prettier.io
+[tutorial]: https://www.youtube.com/watch?v=t_D6MTjTbls
