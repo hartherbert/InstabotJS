@@ -33,7 +33,6 @@ export interface BotBehaviorConfig {
    * */
   botModes: string;
 
-
   /*Like-Config*/
   /**
    * maxLikesPerHashtag, maximum likes the bot is allowed to make per hashtag per 24 hours

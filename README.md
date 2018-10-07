@@ -58,7 +58,6 @@ available botModes, see **strategies**
 + maxFollowsPerHashtag
 > maxFollowsPerHashtag, maximum follows the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag (only used by sinlge follow mode)
 + followerOptions
->followerOptions, options that determine if bot should follow a specific user
   + unwantedUsernames
   > unwantedUsernames, list of strings containing full or parts of usernames that are not wanted to be followed
   + followFakeUsers
@@ -70,7 +69,6 @@ available botModes, see **strategies**
   + unfollowOnlyWhenFollowingMe
   > unfollowOnlyWhenFollowingMe, only let bot unfollow user if user is following user
 + postOptions
-> postOptions, options that determine if bot should like an specific post
   + maxLikesToLikeMedia
   > maxLikesToLikeMedia, maximum likes a post is allowed to have to be liked by the bot
   + minLikesToLikeMedia
@@ -80,6 +78,13 @@ available botModes, see **strategies**
 (time in minutes)
 + isTesting
 > isTesting, used only to let bot be checkable by automated tests
+
+### Strategies 
+Strategies or botModes (reference in bot-config.json) can be used to configure the behaviour of the bot while online. One maybe just wants to like pictures every day, the other only wants to follow
+users automatically. There are a few strategies to use to complete different kind of behaviours. All strategies can be used together.
++ like-classic-mode
++ follow-classic-mode
++ unfollow-classic-mode
 
 ## Bot config
 
