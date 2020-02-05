@@ -19,72 +19,73 @@ What's included:
 * [NPM scripts for common operations](#available-scripts),
 * .editorconfig for consistent file format.
 
-
 ## Quick start
 
 Just watch the Youtube video
 
 [![How to setup an Instagram-bot for free](http://img.youtube.com/vi/t_D6MTjTbls/0.jpg)](http://www.youtube.com/watch?v=t_D6MTjTbls)
 
-
 ## Config
+
 These configuration setting should be set inside the src [bot-config.json](/src/bot-config.json) file when you are compiling the project with `npm run watch`. When you are only editing the configuration without compiling it, just edit the [bot-config.json](/build/src/bot-config.json) in the `build/src` directory.
 
-+ hashtags
-> hashtags, list of hashtags the bot should search for, without '#' prefix
-+ sleepStart
-> sleepStart, time to send the bot to sleep only in this format 'hh:mm' or 'h:mm'
-+ sleepEnd
-> sleepEnd, time to wake the bot up again only in this format 'hh:mm' or 'h:mm'
-+ botModes
-> botModes, list of names of modes to start, format: 'routine1, routine2, routine3, ...'
-available botModes, see **strategies**
-+ maxLikesPerHashtag
-> maxLikesPerHashtag, maximum likes the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag
-+ maxLikesPerDay
-> maxLikesPerDay, maximum likes the bot is allowed to make per 24 hours
-+ maxDislikesPerDay
-> maxDislikesPerDay, maximum dislikes per 24 hours
-+ minDislikeWaitTime
-> minDislikeWaitTime, minimum time to wait to dislike a mediapost the bot liked before
-(time in minutes)
-+ maxFollowsPerDay
-> maxFollowsPerDay, max people to follow in 24 hours
-+ maxUnfollowsPerDay
-> maxUnfollowsPerDay, max people to unfollow in 24 hours
-+ minUnfollowWaitTime
-> minUnfollowWaitTime, minimum time to wait to unfollow a user the bot followed before
-(time in minutes)
-+ maxFollowsPerHashtag
-> maxFollowsPerHashtag, maximum follows the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag (only used by sinlge follow mode)
-+ followerOptions
-  + unwantedUsernames
-  > unwantedUsernames, list of strings containing full or parts of usernames that are not wanted to be followed
-  + followFakeUsers
-  > followFakeUsers, if bot should follow users that the bot thinks are fake users
-  + followSelebgramUsers
-  > followSelebgramUsers, if bot should follow users that the bot thinks are selebgram users
-  + followPassiveUsers
-  > followPassiveUsers, if bot should follow users that the bot thinks are passive (inactive) users
-  + unfollowOnlyWhenFollowingMe
-  > unfollowOnlyWhenFollowingMe, only let bot unfollow user if user is following user
-+ postOptions
-  + maxLikesToLikeMedia
-  > maxLikesToLikeMedia, maximum likes a post is allowed to have to be liked by the bot
-  + minLikesToLikeMedia
-  > minLikesToLikeMedia, minimum likes a post is allowed to have to be liked by the bot
-+ waitTimeBeforeDelete
-> waitTimeBeforeDelete, minutes to wait before delete stored data (only unfollowed and disliked images) this option is only available to prevent an enormous data stored as json
-(time in minutes)
-+ isTesting
-> isTesting, used only to let bot be checkable by automated tests
+* hashtags
+  > hashtags, list of hashtags the bot should search for, without '#' prefix
+* sleepStart
+  > sleepStart, time to send the bot to sleep only in this format 'hh:mm' or 'h:mm'
+* sleepEnd
+  > sleepEnd, time to wake the bot up again only in this format 'hh:mm' or 'h:mm'
+* botModes
+  > botModes, list of names of modes to start, format: 'routine1, routine2, routine3, ...'
+  > available botModes, see **strategies**
+* maxLikesPerHashtag
+  > maxLikesPerHashtag, maximum likes the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag
+* maxLikesPerDay
+  > maxLikesPerDay, maximum likes the bot is allowed to make per 24 hours
+* maxDislikesPerDay
+  > maxDislikesPerDay, maximum dislikes per 24 hours
+* minDislikeWaitTime
+  > minDislikeWaitTime, minimum time to wait to dislike a mediapost the bot liked before
+  > (time in minutes)
+* maxFollowsPerDay
+  > maxFollowsPerDay, max people to follow in 24 hours
+* maxUnfollowsPerDay
+  > maxUnfollowsPerDay, max people to unfollow in 24 hours
+* minUnfollowWaitTime
+  > minUnfollowWaitTime, minimum time to wait to unfollow a user the bot followed before
+  > (time in minutes)
+* maxFollowsPerHashtag
+  > maxFollowsPerHashtag, maximum follows the bot is allowed to make per hashtag per 24 hours when the limit is reached, the bot takes another hashtag (only used by sinlge follow mode)
+* followerOptions
+  * unwantedUsernames
+    > unwantedUsernames, list of strings containing full or parts of usernames that are not wanted to be followed
+  * followFakeUsers
+    > followFakeUsers, if bot should follow users that the bot thinks are fake users
+  * followSelebgramUsers
+    > followSelebgramUsers, if bot should follow users that the bot thinks are selebgram users
+  * followPassiveUsers
+    > followPassiveUsers, if bot should follow users that the bot thinks are passive (inactive) users
+  * unfollowOnlyWhenFollowingMe
+    > unfollowOnlyWhenFollowingMe, only let bot unfollow user if user is following user
+* postOptions
+  * maxLikesToLikeMedia
+    > maxLikesToLikeMedia, maximum likes a post is allowed to have to be liked by the bot
+  * minLikesToLikeMedia
+    > minLikesToLikeMedia, minimum likes a post is allowed to have to be liked by the bot
+* waitTimeBeforeDelete
+  > waitTimeBeforeDelete, minutes to wait before delete stored data (only unfollowed and disliked images) this option is only available to prevent an enormous data stored as json
+  > (time in minutes)
+* isTesting
+  > isTesting, used only to let bot be checkable by automated tests
 
-### Strategies 
+### Strategies
+
 Strategies or botModes (reference in bot-config.json) can be used to configure the behaviour of the bot while online. One maybe just wants to like pictures every day, the other only wants to follow
 users automatically. There are a few strategies to use to complete different kind of behaviours. All strategies can be used together.
-+ like-classic-mode
-+ follow-classic-mode
-+ unfollow-classic-mode
+
+* like-classic-mode
+* follow-classic-mode
+* unfollow-classic-mode
 
 ## Bot config
 
@@ -121,7 +122,6 @@ To see all available options to customize the bot in the .json see the typescrip
 To change some code and compile the typescript code to javascript, just run `npm run watch`. This will copy the [bot-config.json](/src/bot-config.json) from the src to the build/src directory and watch filechanges and compile them to javascript.
 When you finished coding some stuff just go to `build/src` and run `node main.js` and watch your little bot go 🔥
 
-
 ## Actions frequency restrictions
 
 * **Likes limit**: no more than one like every 28 – 36 seconds (1000 likes at a time for a period of 24 hours);
@@ -147,7 +147,6 @@ You should keep these in mind in case you’re not sure that Instagram treats yo
 
 The best strategy for new accounts would be to publish 2 or 3 images and let the account settle in for 2 or 3 weeks.
 
-
 ## Available scripts
 
 * `clean` - remove coverage data, Jest cache and transpiled files,
@@ -158,9 +157,9 @@ The best strategy for new accounts would be to publish 2 or 3 images and let the
 * `test:watch` - interactive watch mode to automatically re-run tests
 
 ## Support
-If you want to support this project send a PR or give it a star. 
-Want to say thank you? Help me out  [![Donate][donate-badge]][donate]
 
+If you want to support this project send a PR or give it a star.
+Want to say thank you? Help me out [![Donate][donate-badge]][donate]
 
 [ts-badge]: https://img.shields.io/badge/TypeScript-3.0-blue.svg
 [nodejs-badge]: https://img.shields.io/badge/Node.js->=%208.9-blue.svg

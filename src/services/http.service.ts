@@ -386,7 +386,7 @@ export class HttpService {
                 return resolve(Utils.getResult(response, null));
               } else {
                 return resolve(
-                  Utils.getResult(
+                  Utils.getResult<MediaPost>(
                     response,
                     convertToMediaPost(Utils.getPostGraphQL(json)),
                   ),

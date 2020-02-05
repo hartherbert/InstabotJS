@@ -24,9 +24,9 @@ export interface IMediaPost {
 
 export class MediaPost implements IMediaPost {
   public id: string;
-  public likes: number;
+  public likes: number = 0;
   public caption: string;
-  public comments: number;
+  public comments: number = 0;
   public createdAt: Date;
   public ownerId: string;
   public commentsDisabled: boolean;
@@ -51,6 +51,7 @@ export class MediaPost implements IMediaPost {
       ...this.options,
       ...options
     };
+
   }
 
   public canLike(): boolean {
@@ -66,7 +67,6 @@ export const convertToMediaPosts = (
   mediaArray: any[],
   options?: MediaPostOptions,
 ): MediaPost[] => {
-
   const posts: MediaPost[] = [];
   mediaArray.forEach(media => {
     const node = media['node'];
@@ -103,8 +103,10 @@ export const convertToMediaPost = (
         ownerId: mediaData['owner']['id'],
         caption:
           mediaData['edge_media_to_caption']['edges'][0]['node']['text'] || '',
-        likes: Number(mediaData['edge_media_preview_like']['count']) || 0,
-        comments: Number(mediaData['edge_media_to_comment']['count']) || 0,
+        /*likes: Number(mediaData['edge_media_preview_like']['count']) || 0,
+        comments: Number(mediaData['edge_media_to_comment']['count']) || 0,*/
+        likes: mediaData && mediaData['edge_media_preview_like'] && mediaData['edge_media_preview_like']['count'] || 0,
+        comments: mediaData && mediaData['edge_media_to_comment'] && mediaData['edge_media_to_comment']['count'] || 0,
         createdAt:
           new Date(Number(mediaData['taken_at_timestamp']) * 1000) ||
           new Date(Date.now()),
@@ -115,6 +117,7 @@ export const convertToMediaPost = (
       options,
     );
   } catch (err) {
+    console.error('convertToMediaPost', err);
     return null;
   }
 };
